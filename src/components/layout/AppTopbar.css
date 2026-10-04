@@ -1,0 +1,121 @@
+.app-topbar {
+    height: 72px;
+    padding: 0 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    background: #ffffff;
+    border-bottom: 1px solid var(--color-border);
+    position: relative;
+    z-index: 5;
+}
+
+.topbar-brand,
+.topbar-right,
+.topbar-user {
+    display: flex;
+    align-items: center;
+}
+
+.topbar-brand {
+    gap: 10px;
+}
+
+.topbar-brand-mark {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    color: var(--color-dark);
+    background: var(--color-lime);
+}
+
+.topbar-brand-name {
+    font-size: 19px;
+    font-weight: 800;
+    letter-spacing: -0.7px;
+}
+
+.topbar-right {
+    gap: 24px;
+}
+
+.environment-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid var(--color-border);
+    border-radius: 999px;
+    color: var(--color-muted);
+    font-size: 11px;
+    font-weight: 700;
+}
+
+.status-dot {
+    width: 7px;
+    height: 7px;
+    flex: 0 0 7px;
+    display: inline-block;
+    border-radius: 50%;
+    background: var(--color-olive);
+}
+
+.topbar-user {
+    gap: 10px;
+}
+
+.topbar-avatar {
+    width: 38px;
+    height: 38px;
+    flex: 0 0 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #edf2df;
+    color: var(--color-olive-dark);
+    font-size: 12px;
+    font-weight: 800;
+}
+
+.topbar-user-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.topbar-user-copy strong {
+    max-width: 150px;
+    overflow: hidden;
+    color: var(--color-dark-secondary);
+    font-size: 12px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.topbar-user-copy small {
+    color: var(--color-muted);
+    font-size: 11px;
+}
+
+@media (max-width: 600px) {
+    .app-topbar {
+        height: 64px;
+        padding: 0 14px;
+    }
+
+    .topbar-right {
+        gap: 10px;
+    }
+
+    .environment-badge {
+        display: none;
+    }
+
+    .topbar-user-copy {
+        display: none;
+    }
+}

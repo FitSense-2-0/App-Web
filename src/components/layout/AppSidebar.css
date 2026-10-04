@@ -1,0 +1,232 @@
+.app-sidebar {
+    width: 250px;
+    min-width: 250px;
+    display: flex;
+    flex-direction: column;
+    align-self: stretch;
+    padding: 24px 16px 16px;
+    color: #f4f5ef;
+    background: var(--color-dark);
+}
+
+.sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+    padding: 0 8px 30px;
+    color: inherit;
+    text-decoration: none;
+}
+
+.sidebar-brand-mark {
+    width: 39px;
+    height: 39px;
+    flex: 0 0 39px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    color: var(--color-dark);
+    background: var(--color-lime);
+}
+
+.sidebar-brand-copy,
+.sidebar-account-info,
+.sidebar-help-copy {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-brand-copy {
+    gap: 4px;
+}
+
+.sidebar-brand-copy strong {
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+}
+
+.sidebar-brand-copy span {
+    color: #a2ad9b;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1.1px;
+}
+
+.sidebar-content {
+    flex: 1;
+}
+
+.sidebar-label {
+    margin: 0 0 13px 10px;
+    color: #899387;
+    font-size: 9px;
+    font-weight: 800;
+    letter-spacing: 1.1px;
+}
+
+.sidebar-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.nav-item {
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 0 12px;
+    border: 1px solid transparent;
+    border-radius: 10px;
+    color: #aeb7aa;
+    text-decoration: none;
+    transition: background 0.2s ease, color 0.2s ease;
+}
+
+.nav-item:hover {
+    color: #ffffff;
+    background: #1a2119;
+}
+
+.nav-item.active {
+    color: var(--color-lime);
+    background: #222c1b;
+    border-color: #344126;
+}
+
+.nav-icon {
+    flex: 0 0 auto;
+}
+
+.nav-text {
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.sidebar-bottom {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    padding-top: 24px;
+}
+
+.sidebar-help-card {
+    display: flex;
+    gap: 10px;
+    padding: 13px 11px;
+    border: 1px solid #30392d;
+    border-radius: 12px;
+    background: #171e16;
+}
+
+.sidebar-help-icon {
+    color: var(--color-lime);
+}
+
+.sidebar-help-copy {
+    gap: 6px;
+}
+
+.sidebar-help-copy strong {
+    font-size: 11px;
+}
+
+.sidebar-help-copy p {
+    margin: 0;
+    color: #a0aa9a;
+    font-size: 10px;
+    line-height: 1.6;
+}
+
+.sidebar-account {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 16px 4px 0;
+    border-top: 1px solid #30392d;
+}
+
+.sidebar-account-avatar {
+    width: 36px;
+    height: 36px;
+    flex: 0 0 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #303c28;
+    color: var(--color-lime);
+    font-size: 11px;
+    font-weight: 800;
+}
+
+.sidebar-account-info {
+    gap: 4px;
+}
+
+.sidebar-account-info strong,
+.sidebar-account-info span {
+    max-width: 145px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.sidebar-account-info strong {
+    font-size: 11px;
+}
+
+.sidebar-account-info span {
+    color: #a0aa9a;
+    font-size: 10px;
+}
+
+.sidebar-footer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 5px;
+    color: #a0aa9a;
+    font-size: 10px;
+}
+
+@media (max-width: 900px) {
+    .app-sidebar {
+        width: 215px;
+        min-width: 215px;
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+}
+
+@media (max-width: 600px) {
+    .app-sidebar {
+        width: 68px;
+        min-width: 68px;
+        padding: 18px 8px;
+    }
+
+    .sidebar-brand {
+        justify-content: center;
+        padding: 0 0 26px;
+    }
+
+    .sidebar-brand-copy,
+    .sidebar-label,
+    .nav-text,
+    .sidebar-bottom {
+        display: none;
+    }
+
+    .sidebar-nav {
+        align-items: center;
+    }
+
+    .nav-item {
+        width: 48px;
+        justify-content: center;
+        padding: 0;
+    }
+}

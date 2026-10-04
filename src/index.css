@@ -1,0 +1,100 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+
+:root {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    color: #111810;
+    background: #f4f5ef;
+    font-synthesis: none;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+
+    --color-lime: #c7fe38;
+    --color-dark: #0f1410;
+    --color-dark-secondary: #111810;
+    --color-background: #f4f5ef;
+    --color-surface: #ffffff;
+    --color-olive: #748e36;
+    --color-olive-dark: #526529;
+    --color-border: #dde0d6;
+    --color-muted: #7a8375;
+}
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    min-width: 320px;
+    min-height: 100%;
+    background: var(--color-background);
+}
+
+body {
+    min-width: 320px;
+    min-height: 100vh;
+    margin: 0;
+}
+
+body,
+button,
+input,
+textarea,
+select {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+    font-size: inherit;
+}
+
+button,
+a {
+    -webkit-tap-highlight-color: transparent;
+}
+
+a {
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+button:disabled {
+    cursor: not-allowed;
+}
+
+img,
+svg {
+    display: block;
+}
+
+#root {
+    min-height: 100vh;
+}
+
+::selection {
+    color: #111810;
+    background: #c7fe38;
+}
+
+:focus-visible {
+    outline: 2px solid #748e36;
+    outline-offset: 3px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        scroll-behavior: auto !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
