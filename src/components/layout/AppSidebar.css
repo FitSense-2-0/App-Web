@@ -230,3 +230,94 @@
         padding: 0;
     }
 }
+
+/* Accesibilidad y transiciones de navegación */
+.sidebar-brand,
+.nav-item {
+    -webkit-tap-highlight-color: transparent;
+}
+
+.sidebar-brand {
+    border-radius: 12px;
+    transition: opacity 180ms ease;
+}
+
+.sidebar-brand:hover {
+    opacity: 0.88;
+}
+
+.nav-item {
+    position: relative;
+    transition:
+        background-color 180ms ease,
+        color 180ms ease,
+        border-color 180ms ease,
+        transform 180ms ease;
+}
+
+.nav-item:hover {
+    transform: translateX(2px);
+}
+
+.nav-item.active {
+    font-weight: 700;
+}
+
+.nav-item.active::before {
+    position: absolute;
+    top: 10px;
+    bottom: 10px;
+    left: -1px;
+    width: 3px;
+    border-radius: 0 4px 4px 0;
+    background: var(--color-lime);
+    content: "";
+}
+
+.sidebar-brand:focus-visible,
+.nav-item:focus-visible {
+    outline: 2px solid var(--color-lime);
+    outline-offset: 3px;
+}
+
+.sidebar-help-card {
+    transition:
+        border-color 180ms ease,
+        background-color 180ms ease;
+}
+
+.sidebar-help-card:hover {
+    border-color: #45513c;
+    background: #1b2419;
+}
+
+.sidebar-account-avatar {
+    overflow: hidden;
+}
+
+@media (max-width: 600px) {
+    .nav-item:hover {
+        transform: none;
+    }
+
+    .nav-item.active::before {
+        left: -4px;
+    }
+
+    .sidebar-brand:focus-visible,
+    .nav-item:focus-visible {
+        outline-offset: 1px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .sidebar-brand,
+    .nav-item,
+    .sidebar-help-card {
+        transition: none;
+    }
+
+    .nav-item:hover {
+        transform: none;
+    }
+}

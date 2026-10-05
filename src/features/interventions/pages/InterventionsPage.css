@@ -602,3 +602,97 @@
         transition: none;
     }
 }
+
+
+.interventions-live-history {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.interventions-live-card {
+    padding: 20px;
+    border: 1px solid #e6e9df;
+    border-radius: 14px;
+    background: #fff;
+}
+
+.interventions-live-card-heading {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.interventions-live-card-heading > div {
+    min-width: 0;
+}
+
+.interventions-live-card-heading h3 {
+    margin: 0;
+    color: #20281e;
+    font-size: 14px;
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+}
+
+.interventions-live-card-heading p {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 7px 0 0;
+    color: #7b8475;
+    font-size: 12px;
+}
+
+.interventions-live-details {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+}
+
+.interventions-live-details > div {
+    min-width: 0;
+    padding: 12px;
+    border-radius: 10px;
+    background: #f6f7f2;
+}
+
+.interventions-live-details span {
+    display: block;
+    margin-bottom: 6px;
+    color: #737d6e;
+    font-size: 11px;
+    line-height: 1.5;
+}
+
+.interventions-live-details strong {
+    display: block;
+    color: #20281e;
+    font-size: 13px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+
+.interventions-page .interventions-empty-state button {
+    margin-top: 12px;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 9px;
+    background: #111810;
+    color: #c7fe38;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+@media (max-width: 640px) {
+    .interventions-live-card {
+        padding: 14px;
+    }
+
+    .interventions-live-details {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+}

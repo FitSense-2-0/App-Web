@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from 'react'
 import {
     Activity,
     ArrowLeft,
@@ -19,34 +20,158 @@ import {
     YAxis,
 } from 'recharts'
 import DashboardLayout from '../../../components/layout/DashboardLayout'
+import {
+    metricsService,
+    type WeeklyMetrics,
+} from '../../../services/metricsService'
+import {
+    interventionsService,
+    type Intervention,
+} from '../../../services/interventionsService'
+import { getApiErrorMessage } from '../../../services/api'
 import './AnalyticsPage.css'
 
-const trendData: { week: string; adherence: number }[] = []
+interface TrendPoint {
+    week: string
+    adherence: number
+    date: string
+}
 
-const indicators = [
-    {
-        title: 'Adherencia ponderada',
-        description: 'Cumplimiento global del plan',
-        icon: TrendingUp,
-    },
-    {
-        title: 'Entrenamientos completados',
-        description: 'Sesiones finalizadas',
-        icon: CheckCircle2,
-    },
-    {
-        title: 'Volumen ejecutado',
-        description: 'Volumen registrado de ejercicio',
-        icon: Dumbbell,
-    },
-    {
-        title: 'Intervenciones registradas',
-        description: 'Ajustes aplicados al plan',
-        icon: ClipboardList,
-    },
-]
+function formatNumber(value: number | null | undefined): string {
+    if (value == null || !Number.isFinite(value)) return '—'
+    return value.toLocaleString('es-PE', {
+        maximumFractionDigits: 2,
+    })
+}
+
+function formatDate(value: string): string {
+    const date = new Date(`${value.slice(0, 10)}T12:00:00`)
+
+    if (Number.isNaN(date.getTime())) return value
+
+    return date.toLocaleDateString('es-PE', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+    })
+}
 
 export default function AnalyticsPage() {
+    const [metrics, setMetrics] = useState<WeeklyMetrics[]>([])
+    const [interventions, setInterventions] = useState<Intervention[]>([])
+    const [loading, setLoading] = useState(true)
+    const [error, setError] = useState('')
+
+    useEffect(() => {
+        let active = true
+
+        async function loadAnalytics() {
+            setLoading(true)
+            setError('')
+
+            const [metricsResult, interventionsResult] =
+                await Promise.allSettled([
+                    metricsService.getWeeklyHistory(),
+                    interventionsService.getHistory(),
+                ])
+
+            if (!active) return
+
+            if (metricsResult.status === 'fulfilled') {
+                const orderedMetrics = [...metricsResult.value]
+                    .filter(item =>
+                        Number.isFinite(Number(item.weightedAdherencePct)),
+                    )
+                    .sort(
+                        (a, b) =>
+                            new Date(a.weekStartDate).getTime() -
+                            new Date(b.weekStartDate).getTime(),
+                    )
+
+                setMetrics(orderedMetrics)
+            } else {
+                setMetrics([])
+            }
+
+            if (interventionsResult.status === 'fulfilled') {
+                const orderedInterventions = [...interventionsResult.value]
+                    .sort(
+                        (a, b) =>
+                            new Date(b.appliedAt).getTime() -
+                            new Date(a.appliedAt).getTime(),
+                    )
+
+                setInterventions(orderedInterventions)
+            } else {
+                setInterventions([])
+            }
+
+            if (metricsResult.status === 'rejected') {
+                setError(getApiErrorMessage(metricsResult.reason))
+            } else if (interventionsResult.status === 'rejected') {
+                setError(getApiErrorMessage(interventionsResult.reason))
+            }
+
+            setLoading(false)
+        }
+
+        void loadAnalytics()
+
+        return () => {
+            active = false
+        }
+    }, [])
+
+    const latestMetrics = metrics[metrics.length - 1]
+
+    const trendData: TrendPoint[] = metrics.map(item => ({
+        week: formatDate(item.weekStartDate),
+        date: item.weekStartDate,
+        adherence: Math.min(
+            100,
+            Math.max(0, Number(item.weightedAdherencePct)),
+        ),
+    }))
+
+    const indicators = [
+        {
+            title: 'Adherencia ponderada',
+            value: latestMetrics
+                ? `${formatNumber(latestMetrics.weightedAdherencePct)}%`
+                : '—',
+            description: latestMetrics
+                ? `Semana del ${formatDate(latestMetrics.weekStartDate)}`
+                : 'Cumplimiento global del plan',
+            icon: TrendingUp,
+        },
+        {
+            title: 'Entrenamientos completados',
+            value: latestMetrics
+                ? formatNumber(latestMetrics.completedWorkouts)
+                : '—',
+            description: latestMetrics
+                ? `${formatNumber(latestMetrics.scheduledWorkouts)} sesiones programadas`
+                : 'Sesiones finalizadas',
+            icon: CheckCircle2,
+        },
+        {
+            title: 'Volumen ejecutado',
+            value: latestMetrics
+                ? formatNumber(latestMetrics.executedVolume)
+                : '—',
+            description: latestMetrics
+                ? `Planificado: ${formatNumber(latestMetrics.plannedWeekVolume)}`
+                : 'Volumen registrado de ejercicio',
+            icon: Dumbbell,
+        },
+        {
+            title: 'Intervenciones registradas',
+            value: interventions.length.toLocaleString('es-PE'),
+            description: 'Ajustes registrados en el plan',
+            icon: ClipboardList,
+        },
+    ]
+
     return (
         <DashboardLayout>
             <div className="analytics-page">
@@ -81,27 +206,46 @@ export default function AnalyticsPage() {
                         </p>
                     </div>
 
-                    <div className="analytics-hero-icon">
+                    <div className="analytics-hero-icon" aria-hidden="true">
                         <BarChart3 size={35} />
                     </div>
                 </section>
+
+                {error && (
+                    <div role="alert" className="analytics-empty">
+                        <strong>No se pudo completar la carga</strong>
+                        <p>{error}</p>
+                        <button
+                            type="button"
+                            onClick={() => window.location.reload()}
+                        >
+                            Reintentar
+                        </button>
+                    </div>
+                )}
 
                 <section className="section-heading">
                     <div>
                         <h2>Indicadores de seguimiento</h2>
                         <p>
-                            Resumen de las métricas disponibles para el análisis.
+                            {loading
+                                ? 'Cargando información de la API…'
+                                : 'Resumen de los últimos datos semanales disponibles.'}
                         </p>
                     </div>
 
                     <span className="pending-label">
                         <span className="status-dot" />
-                        Sin datos disponibles
+                        {loading
+                            ? 'Cargando datos'
+                            : metrics.length > 0 || interventions.length > 0
+                                ? 'Datos recibidos'
+                                : 'Sin datos disponibles'}
                     </span>
                 </section>
 
                 <section className="metrics-grid analytics-indicator-grid">
-                    {indicators.map(({ title, description, icon: Icon }) => (
+                    {indicators.map(({ title, value, description, icon: Icon }) => (
                         <article className="metric-card" key={title}>
                             <div className="metric-top">
                                 <span className="metric-icon">
@@ -111,7 +255,7 @@ export default function AnalyticsPage() {
                             </div>
 
                             <p>{title}</p>
-                            <h3>—</h3>
+                            <h3>{loading ? '…' : value}</h3>
 
                             <div className="metric-foot">
                                 <span className="neutral-indicator">
@@ -135,7 +279,12 @@ export default function AnalyticsPage() {
                             </span>
                         </div>
 
-                        {trendData.length > 0 ? (
+                        {loading ? (
+                            <div className="analytics-empty">
+                                <strong>Cargando métricas semanales…</strong>
+                                <p>Consultando los registros disponibles.</p>
+                            </div>
+                        ) : trendData.length > 0 ? (
                             <div className="analytics-chart">
                                 <ResponsiveContainer width="100%" height="100%">
                                     <LineChart
@@ -157,6 +306,7 @@ export default function AnalyticsPage() {
                                             dataKey="week"
                                             tickLine={false}
                                             axisLine={false}
+                                            minTickGap={20}
                                             tick={{
                                                 fill: '#7a8375',
                                                 fontSize: 11,
@@ -171,12 +321,21 @@ export default function AnalyticsPage() {
                                                 fill: '#7a8375',
                                                 fontSize: 11,
                                             }}
-                                            tickFormatter={(value) => `${value}%`}
+                                            tickFormatter={value => `${value}%`}
                                         />
 
                                         <Tooltip
-                                            formatter={(value) => [
-                                                `${value}%`,
+                                            labelFormatter={(_, payload) => {
+                                                const point = payload?.[0]?.payload as
+                                                    | TrendPoint
+                                                    | undefined
+
+                                                return point
+                                                    ? `Semana del ${formatDate(point.date)}`
+                                                    : ''
+                                            }}
+                                            formatter={value => [
+                                                `${formatNumber(Number(value))}%`,
                                                 'Adherencia',
                                             ]}
                                         />
@@ -184,6 +343,7 @@ export default function AnalyticsPage() {
                                         <Line
                                             type="monotone"
                                             dataKey="adherence"
+                                            name="Adherencia"
                                             stroke="#748e36"
                                             strokeWidth={3}
                                             dot={{
@@ -202,12 +362,20 @@ export default function AnalyticsPage() {
                                     <TrendingUp size={23} />
                                 </span>
 
-                                <strong>Esperando datos de adherencia</strong>
+                                <strong>Sin métricas semanales</strong>
 
                                 <p>
-                                    La tendencia aparecerá cuando existan métricas
-                                    semanales disponibles.
+                                    La gráfica aparecerá cuando la API devuelva registros
+                                    de adherencia para las semanas del usuario.
                                 </p>
+
+                                <Link
+                                    className="analytics-text-link"
+                                    to="/dashboard/metrics"
+                                >
+                                    Consultar métricas
+                                    <span>→</span>
+                                </Link>
                             </div>
                         )}
                     </article>
@@ -216,7 +384,7 @@ export default function AnalyticsPage() {
                         <div className="card-heading">
                             <div>
                                 <h2>Actividad y ajustes</h2>
-                                <p>Seguimiento del plan de ejercicio</p>
+                                <p>Intervenciones más recientes</p>
                             </div>
 
                             <span className="card-icon">
@@ -224,34 +392,74 @@ export default function AnalyticsPage() {
                             </span>
                         </div>
 
-                        <div className="analytics-empty">
-                            <span className="analytics-empty-icon">
-                                <ClipboardList size={23} />
-                            </span>
+                        {loading ? (
+                            <div className="analytics-empty">
+                                <strong>Cargando intervenciones…</strong>
+                            </div>
+                        ) : interventions.length > 0 ? (
+                            <div className="analytics-interventions-list">
+                                {interventions.slice(0, 5).map(item => (
+                                    <div
+                                        className="analytics-intervention-item"
+                                        key={item.interventionId}
+                                    >
+                                        <span className="analytics-empty-icon">
+                                            <ClipboardList size={19} />
+                                        </span>
 
-                            <strong>Sin registros para comparar</strong>
+                                        <div>
+                                            <strong>
+                                                {item.messageShown ||
+                                                    'Ajuste registrado en el plan'}
+                                            </strong>
+                                            <p>
+                                                {formatDate(item.appliedAt)}
+                                                {item.adherenceAfterPct != null
+                                                    ? ` · Adherencia posterior: ${formatNumber(item.adherenceAfterPct)}%`
+                                                    : ''}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
 
-                            <p>
-                                Aquí se podrá consultar la actividad registrada y su
-                                relación con las intervenciones, si la API proporciona
-                                esos datos.
-                            </p>
+                                <Link
+                                    className="analytics-text-link"
+                                    to="/dashboard/interventions"
+                                >
+                                    Ver todas las intervenciones
+                                    <span>→</span>
+                                </Link>
+                            </div>
+                        ) : (
+                            <div className="analytics-empty">
+                                <span className="analytics-empty-icon">
+                                    <ClipboardList size={23} />
+                                </span>
 
-                            <Link
-                                className="analytics-text-link"
-                                to="/dashboard/interventions"
-                            >
-                                Consultar intervenciones
-                                <span>→</span>
-                            </Link>
-                        </div>
+                                <strong>Sin intervenciones registradas</strong>
+
+                                <p>
+                                    Aquí aparecerán los ajustes del plan que devuelva la API.
+                                </p>
+
+                                <Link
+                                    className="analytics-text-link"
+                                    to="/dashboard/interventions"
+                                >
+                                    Consultar intervenciones
+                                    <span>→</span>
+                                </Link>
+                            </div>
+                        )}
                     </article>
                 </section>
 
                 <footer className="dashboard-footer">
                     <span>FitSense · Analítica</span>
                     <span>
-                        Los análisis se actualizarán con los datos disponibles de la API.
+                        {loading
+                            ? 'Cargando información…'
+                            : 'Indicadores calculados a partir de los registros recibidos de la API.'}
                     </span>
                 </footer>
             </div>

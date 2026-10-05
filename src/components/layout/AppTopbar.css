@@ -1,14 +1,14 @@
 .app-topbar {
-    height: 72px;
-    padding: 0 30px;
+    position: relative;
+    z-index: 5;
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 20px;
+    min-height: 72px;
+    padding: 0 30px;
     background: #ffffff;
     border-bottom: 1px solid var(--color-border);
-    position: relative;
-    z-index: 5;
 }
 
 .topbar-brand,
@@ -19,27 +19,36 @@
 }
 
 .topbar-brand {
+    flex-shrink: 0;
     gap: 10px;
 }
 
 .topbar-brand-mark {
-    width: 36px;
-    height: 36px;
     display: grid;
     place-items: center;
+    width: 36px;
+    height: 36px;
     border-radius: 11px;
     color: var(--color-dark);
     background: var(--color-lime);
+    transition: transform 180ms ease;
+}
+
+.topbar-brand:hover .topbar-brand-mark {
+    transform: rotate(-5deg) scale(1.04);
 }
 
 .topbar-brand-name {
+    color: var(--color-dark);
     font-size: 19px;
     font-weight: 800;
     letter-spacing: -0.7px;
 }
 
 .topbar-right {
-    gap: 24px;
+    justify-content: flex-end;
+    gap: 20px;
+    min-width: 0;
 }
 
 .environment-badge {
@@ -50,29 +59,33 @@
     border: 1px solid var(--color-border);
     border-radius: 999px;
     color: var(--color-muted);
+    background: #fafbf8;
     font-size: 11px;
     font-weight: 700;
+    white-space: nowrap;
 }
 
 .status-dot {
+    display: inline-block;
     width: 7px;
     height: 7px;
     flex: 0 0 7px;
-    display: inline-block;
     border-radius: 50%;
     background: var(--color-olive);
 }
 
 .topbar-user {
-    gap: 10px;
+    gap: 12px;
+    min-width: 0;
 }
 
 .topbar-avatar {
+    display: grid;
+    place-items: center;
     width: 38px;
     height: 38px;
     flex: 0 0 38px;
-    display: grid;
-    place-items: center;
+    border: 1px solid #e5eadb;
     border-radius: 50%;
     object-fit: cover;
     background: #edf2df;
@@ -85,6 +98,7 @@
     display: flex;
     flex-direction: column;
     gap: 3px;
+    min-width: 0;
 }
 
 .topbar-user-copy strong {
@@ -92,30 +106,145 @@
     overflow: hidden;
     color: var(--color-dark-secondary);
     font-size: 12px;
+    font-weight: 750;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
 
 .topbar-user-copy small {
+    max-width: 150px;
+    overflow: hidden;
     color: var(--color-muted);
     font-size: 11px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.topbar-logout {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 40px;
+    padding: 0 13px;
+    border: 1px solid #e5e8df;
+    border-radius: 11px;
+    color: #384333;
+    background: #ffffff;
+    box-shadow: 0 1px 2px rgb(15 20 16 / 4%);
+    font: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    white-space: nowrap;
+    cursor: pointer;
+    transition:
+        background-color 180ms ease,
+        border-color 180ms ease,
+        color 180ms ease,
+        box-shadow 180ms ease,
+        transform 180ms ease;
+}
+
+.topbar-logout:hover {
+    color: var(--color-dark);
+    background: #f0f5e7;
+    border-color: #c7d5b1;
+    box-shadow: 0 4px 12px rgb(15 20 16 / 8%);
+    transform: translateY(-1px);
+}
+
+.topbar-logout:active {
+    box-shadow: none;
+    transform: translateY(0) scale(0.98);
+}
+
+.topbar-logout:focus-visible,
+.topbar-brand:focus-visible {
+    outline: 3px solid var(--color-lime);
+    outline-offset: 3px;
+}
+
+@media (max-width: 900px) {
+    .app-topbar {
+        gap: 12px;
+        padding: 0 20px;
+    }
+
+    .topbar-right {
+        gap: 12px;
+    }
+
+    .topbar-logout {
+        gap: 7px;
+        padding: 0 10px;
+    }
 }
 
 @media (max-width: 600px) {
     .app-topbar {
-        height: 64px;
-        padding: 0 14px;
+        min-height: 64px;
+        padding: 0 12px;
+    }
+
+    .topbar-brand {
+        gap: 8px;
+    }
+
+    .topbar-brand-mark {
+        width: 33px;
+        height: 33px;
+    }
+
+    .topbar-brand-name {
+        font-size: 17px;
     }
 
     .topbar-right {
-        gap: 10px;
+        gap: 8px;
     }
 
-    .environment-badge {
-        display: none;
-    }
-
+    .environment-badge,
     .topbar-user-copy {
         display: none;
+    }
+
+    .topbar-user {
+        gap: 8px;
+    }
+
+    .topbar-avatar {
+        width: 32px;
+        height: 32px;
+        flex-basis: 32px;
+    }
+
+    .topbar-logout {
+        width: 38px;
+        min-width: 38px;
+        min-height: 38px;
+        padding: 0;
+        border-radius: 10px;
+    }
+
+    .topbar-logout span {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        overflow: hidden;
+        clip-path: inset(50%);
+        white-space: nowrap;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .topbar-brand-mark,
+    .topbar-logout {
+        transition: none;
+    }
+
+    .topbar-brand:hover .topbar-brand-mark,
+    .topbar-logout:hover,
+    .topbar-logout:active {
+        transform: none;
     }
 }

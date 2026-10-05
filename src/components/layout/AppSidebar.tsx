@@ -85,10 +85,12 @@ export default function AppSidebar({
                 >
                     {navigationItems.map(
                         ({ label, path, icon: Icon, end }) => (
+
                             <NavLink
                                 key={path}
                                 to={path}
                                 end={end}
+                                aria-label={label}
                                 className={({ isActive }) =>
                                     `nav-item${isActive ? ' active' : ''}`
                                 }
@@ -97,9 +99,11 @@ export default function AppSidebar({
                                     className="nav-icon"
                                     size={19}
                                     strokeWidth={1.9}
+                                    aria-hidden="true"
                                 />
                                 <span className="nav-text">{label}</span>
                             </NavLink>
+
                         ),
                     )}
                 </nav>
@@ -144,7 +148,7 @@ export default function AppSidebar({
 
                 <div className="sidebar-footer">
                     <span className="status-dot" aria-hidden="true" />
-                    <span>Modo demostración</span>
+                    <span>Panel de seguimiento</span>
                 </div>
             </div>
         </aside>

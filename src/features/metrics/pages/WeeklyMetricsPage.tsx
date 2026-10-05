@@ -15,6 +15,7 @@ import {
     type WeeklyMetrics,
 } from '../../../services/metricsService'
 import './WeeklyMetricsPage.css'
+import { getApiErrorMessage } from '../../../services/api'
 
 export default function WeeklyMetricsPage() {
     const [metrics, setMetrics] = useState<WeeklyMetrics[]>([])
@@ -39,11 +40,9 @@ export default function WeeklyMetricsPage() {
                     )
                     setMetrics(ordered)
                 }
-            } catch {
+            } catch (error: unknown) {
                 if (active) {
-                    setError(
-                        'No se pudieron cargar las métricas. Comprueba la conexión con la API e inténtalo de nuevo.',
-                    )
+                    setError(getApiErrorMessage(error))
                 }
             } finally {
                 if (active) setLoading(false)
@@ -136,10 +135,36 @@ export default function WeeklyMetricsPage() {
                     </div>
                 </section>
 
+                {loading && (
+                    <div
+                        className="weekly-metrics-loading-state"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        <span className="weekly-metrics-loading-indicator" aria-hidden="true" />
+
+                        <div>
+                            <strong>Cargando tus métricas</strong>
+                            <p>
+                                Estamos consultando tu adherencia y actividad semanal.
+                            </p>
+                        </div>
+                    </div>
+                )}
+
                 {error && (
                     <div className="weekly-metrics-empty" role="alert">
-                        <strong>Error al cargar las métricas</strong>
-                        <p>{error}</p>
+                        <span className="weekly-metrics-empty-icon" aria-hidden="true">
+                            <Activity size={24} />
+                        </span>
+
+                        <strong>No se pudieron cargar las métricas</strong>
+
+                        <p>
+                            No fue posible obtener la información del servidor.
+                            Verifica la conexión e inténtalo nuevamente.
+                        </p>
+
                         <button
                             type="button"
                             onClick={() => window.location.reload()}

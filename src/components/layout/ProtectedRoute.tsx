@@ -1,11 +1,20 @@
 
-import { Navigate, Outlet } from 'react-router-dom'
+import { Navigate, Outlet, useLocation } from 'react-router-dom'
 
 export default function ProtectedRoute() {
-    const token = localStorage.getItem('fitsense_token')
+    const location = useLocation()
 
-    if (!token) {
-        return <Navigate to="/login" replace />
+    const hasLocalSession =
+        localStorage.getItem('fitsense_local_session') === 'true'
+
+    if (!hasLocalSession) {
+        return (
+            <Navigate
+                to="/login"
+                replace
+                state={{ from: location }}
+            />
+        )
     }
 
     return <Outlet />

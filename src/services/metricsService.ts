@@ -1,10 +1,8 @@
-// Son las consultas de métricas semanales existentes
-
 import api from './api'
 
 export interface WeeklyMetrics {
-    weeklyMetricId: string
-    planId: string
+    weeklyMetricId: number | string
+    planId: number | string
     weekNumber: number
     weekStartDate: string
     weekEndDate: string
@@ -36,18 +34,32 @@ export interface WeeklyMetrics {
 
 export const metricsService = {
     async getWeeklyHistory(): Promise<WeeklyMetrics[]> {
-        const response = await api.get<WeeklyMetrics[]>(
+        const { data } = await api.get<WeeklyMetrics[]>(
             '/users/me/metrics/weekly',
         )
 
-        return response.data
+        if (!Array.isArray(data)) {
+            throw new Error(
+                'El servidor no devolvió una lista válida de métricas.',
+            )
+        }
+
+        return data
     },
 
-    async getWeek(weekStartDate: string): Promise<WeeklyMetrics> {
-        const response = await api.get<WeeklyMetrics>(
+    async getWeek(
+        weekStartDate: string,
+    ): Promise<WeeklyMetrics> {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(weekStartDate)) {
+            throw new Error(
+                'La fecha debe tener el formato YYYY-MM-DD.',
+            )
+        }
+
+        const { data } = await api.get<WeeklyMetrics>(
             `/users/me/metrics/weekly/${weekStartDate}`,
         )
 
-        return response.data
+        return data
     },
 }

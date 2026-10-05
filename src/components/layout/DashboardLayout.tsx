@@ -1,26 +1,53 @@
 
+import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import AppSidebar from './AppSidebar'
 import AppTopbar from './AppTopbar'
+import { userService } from '../../services/userService'
 import './DashboardLayout.css'
 
 type DashboardLayoutProps = {
     children: ReactNode
-    userName?: string
-    userRole?: string
-    avatarUrl?: string
 }
 
 export default function DashboardLayout({
     children,
-    userName,
-    userRole,
-    avatarUrl,
 }: DashboardLayoutProps) {
+    const [userName, setUserName] = useState('Mi cuenta')
+    const [userEmail, setUserEmail] = useState('')
+
+    useEffect(() => {
+        let active = true
+
+        async function loadUser() {
+            try {
+                const user = await userService.getMe()
+
+                if (active) {
+                    setUserName(
+                        user.fullName?.trim() || user.email || 'Mi cuenta',
+                    )
+                    setUserEmail(user.email)
+                }
+            } catch {
+                // El interceptor de api.ts gestiona las sesiones vencidas.
+                if (active) {
+                    setUserName('Mi cuenta')
+                    setUserEmail('')
+                }
+            }
+        }
+
+        void loadUser()
+
+        return () => {
+            active = false
+        }
+    }, [])
+
     const profile = {
         userName,
-        userRole,
-        avatarUrl,
+        userRole: userEmail || 'Cuenta FitSense',
     }
 
     return (

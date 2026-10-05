@@ -14,6 +14,16 @@ import { metricsService, type WeeklyMetrics } from '../../../services/metricsSer
 import { interventionsService, type Intervention } from '../../../services/interventionsService'
 import { userService, type CurrentUser } from '../../../services/userService'
 import './DashboardPage.css'
+import {
+    CartesianGrid,
+    Line,
+    LineChart,
+    ResponsiveContainer,
+    Tooltip,
+    XAxis,
+    YAxis,
+} from 'recharts'
+import { getApiErrorMessage } from '../../../services/api'
 
 export default function DashboardPage() {
     const [user, setUser] = useState<CurrentUser | null>(null)
@@ -21,6 +31,7 @@ export default function DashboardPage() {
     const [interventions, setInterventions] = useState<Intervention[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
+    const [metricsHistory, setMetricsHistory] = useState<WeeklyMetrics[]>([])
 
     useEffect(() => {
         let active = true
@@ -43,14 +54,17 @@ export default function DashboardPage() {
             }
 
             if (metricsResult.status === 'fulfilled') {
-                const history = metricsResult.value
-                const latest = [...history].sort(
+                const history = [...metricsResult.value].sort(
                     (a, b) =>
-                        new Date(b.weekStartDate).getTime() -
-                        new Date(a.weekStartDate).getTime(),
-                )[0] ?? null
+                        new Date(a.weekStartDate).getTime() -
+                        new Date(b.weekStartDate).getTime(),
+                )
 
-                setMetrics(latest)
+                setMetricsHistory(history)
+                setMetrics(history[history.length - 1] ?? null)
+            } else {
+                setMetricsHistory([])
+                setMetrics(null)
             }
 
             if (interventionsResult.status === 'fulfilled') {
@@ -71,10 +85,12 @@ export default function DashboardPage() {
                 interventionsResult,
             ].some(result => result.status === 'rejected')
 
-            if (failed) {
-                setError(
-                    'No se pudo cargar parte de la información. Comprueba la conexión con la API.',
-                )
+            if (userResult.status === 'rejected') {
+                setError(getApiErrorMessage(userResult.reason))
+            } else if (metricsResult.status === 'rejected') {
+                setError(getApiErrorMessage(metricsResult.reason))
+            } else if (interventionsResult.status === 'rejected') {
+                setError(getApiErrorMessage(interventionsResult.reason))
             }
 
             setLoading(false)
@@ -86,6 +102,22 @@ export default function DashboardPage() {
             active = false
         }
     }, [])
+
+    const adherenceTrend = metricsHistory
+        .filter(item => Number.isFinite(Number(item.weightedAdherencePct)))
+        .map(item => ({
+            week: new Date(
+                `${item.weekStartDate.slice(0, 10)}T12:00:00`,
+            ).toLocaleDateString('es-PE', {
+                day: '2-digit',
+                month: 'short',
+            }),
+            date: item.weekStartDate,
+            adherence: Math.min(
+                100,
+                Math.max(0, Number(item.weightedAdherencePct)),
+            ),
+        }))
 
     const cards = [
         {
@@ -141,10 +173,43 @@ export default function DashboardPage() {
                     </div>
                 </section>
 
+
+                {loading && (
+                    <div
+                        className="dashboard-loading-message"
+                        role="status"
+                        aria-live="polite"
+                    >
+                        <span className="dashboard-loading-spinner" aria-hidden="true" />
+                        <div className="dashboard-loading-copy">
+                            <strong>Preparando tu resumen</strong>
+                            <span>
+                                Estamos consultando tus métricas y tu actividad reciente.
+                            </span>
+                        </div>
+                    </div>
+                )}
+
+
+
                 {error && (
-                    <p role="alert" className="dashboard-data-message">
-                        {error}
-                    </p>
+                    <div className="dashboard-data-message" role="alert">
+                        <span className="dashboard-error-icon" aria-hidden="true">
+                            <Activity size={21} />
+                        </span>
+
+                        <div className="dashboard-error-content">
+                            <strong>No se pudo cargar toda la información</strong>
+                            <p>{error}</p>
+                            <button
+                                type="button"
+                                className="dashboard-retry-button"
+                                onClick={() => window.location.reload()}
+                            >
+                                Reintentar
+                            </button>
+                        </div>
+                    </div>
                 )}
 
                 <section className="dashboard-section">
@@ -195,30 +260,93 @@ export default function DashboardPage() {
                             </span>
                         </div>
 
-                        <div className="dashboard-empty-chart">
-                            <span className="dashboard-empty-icon">
-                                <TrendingUp size={25} />
-                            </span>
 
-                            <strong>
-                                {loading
-                                    ? 'Cargando métricas…'
-                                    : metrics
-                                        ? `Adherencia registrada: ${metrics.weightedAdherencePct}%`
-                                        : 'Aún no hay métricas disponibles'}
-                            </strong>
+                        {loading ? (
+                            <div className="dashboard-empty-chart" role="status">
+                                <span className="dashboard-loading-spinner" aria-hidden="true" />
+                                <strong>Preparando gráfica</strong>
+                                <p>Consultando el historial semanal.</p>
+                            </div>
+                        ) : adherenceTrend.length > 0 ? (
+                            <div className="dashboard-adherence-chart">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <LineChart
+                                        data={adherenceTrend}
+                                        margin={{ top: 12, right: 12, left: -15, bottom: 0 }}
+                                    >
+                                        <CartesianGrid
+                                            stroke="#e8ebdf"
+                                            strokeDasharray="4 4"
+                                            vertical={false}
+                                        />
+                                        <XAxis
+                                            dataKey="week"
+                                            tickLine={false}
+                                            axisLine={false}
+                                            minTickGap={20}
+                                            tick={{ fill: '#7a8375', fontSize: 11 }}
+                                        />
+                                        <YAxis
+                                            domain={[0, 100]}
+                                            tickLine={false}
+                                            axisLine={false}
+                                            tick={{ fill: '#7a8375', fontSize: 11 }}
+                                            tickFormatter={value => `${value}%`}
+                                        />
+                                        <Tooltip
+                                            labelFormatter={(_, payload) => {
+                                                const point = payload?.[0]?.payload as
+                                                    | (typeof adherenceTrend)[number]
+                                                    | undefined
 
-                            <p>
-                                {metrics
-                                    ? `Semana del ${metrics.weekStartDate} al ${metrics.weekEndDate}. Consulta el detalle para ver los demás indicadores.`
-                                    : 'Cuando la API devuelva registros semanales, podrás consultar aquí tus indicadores.'}
-                            </p>
+                                                if (!point) return ''
 
-                            <Link className="dashboard-inline-link" to="/dashboard/metrics">
-                                Consultar métricas
-                                <ArrowRight size={15} />
-                            </Link>
-                        </div>
+                                                const date = new Date(
+                                                    `${point.date.slice(0, 10)}T12:00:00`,
+                                                )
+
+                                                return `Semana del ${date.toLocaleDateString('es-PE')}`
+                                            }}
+                                            formatter={value => [
+                                                `${Number(value).toLocaleString('es-PE', {
+                                                    maximumFractionDigits: 2,
+                                                })}%`,
+                                                'Adherencia',
+                                            ]}
+                                        />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="adherence"
+                                            name="Adherencia"
+                                            stroke="#748e36"
+                                            strokeWidth={3}
+                                            dot={{
+                                                r: 4,
+                                                fill: '#c7fe38',
+                                                stroke: '#748e36',
+                                            }}
+                                            activeDot={{ r: 6 }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                            </div>
+                        ) : (
+                            <div className="dashboard-empty-chart">
+                                <span className="dashboard-empty-icon">
+                                    <TrendingUp size={25} />
+                                </span>
+                                <strong>Aún no hay métricas disponibles</strong>
+                                <p>
+                                    La gráfica aparecerá cuando existan registros semanales de
+                                    adherencia en la API.
+                                </p>
+                                <Link className="dashboard-inline-link" to="/dashboard/metrics">
+                                    Consultar métricas
+                                    <ArrowRight size={15} />
+                                </Link>
+                            </div>
+                        )}
+
                     </article>
 
                     <article className="dashboard-panel dashboard-interventions-panel">
@@ -235,7 +363,7 @@ export default function DashboardPage() {
 
                         <div className="dashboard-empty-interventions">
                             {loading ? (
-                                <strong>Cargando intervenciones…</strong>
+                                <strong role="status">Consultando intervenciones…</strong>
                             ) : interventions.length > 0 ? (
                                 <>
                                     <strong>

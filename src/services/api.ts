@@ -1,23 +1,92 @@
-// El cliente centraliza las solicitudes HTTP y adjunta el token cuando exista una sesión autenticada.
+import axios, {
+    AxiosError,
+    type InternalAxiosRequestConfig,
+} from 'axios'
 
-import axios from 'axios'
+const baseURL = import.meta.env.VITE_API_BASE_URL?.trim()
+
+if (!baseURL) {
+    throw new Error(
+        'Falta configurar VITE_API_BASE_URL en el archivo de entorno.',
+    )
+}
 
 const api = axios.create({
-    baseURL: import.meta.env.VITE_API_BASE_URL,
+    baseURL: baseURL.replace(/\/+$/, ''),
+    timeout: 20_000,
     headers: {
+        Accept: 'application/json',
         'Content-Type': 'application/json',
     },
-    timeout: 15000,
 })
 
-api.interceptors.request.use((config) => {
-    const token = localStorage.getItem('fitsense_token')
+api.interceptors.request.use(
+    (config: InternalAxiosRequestConfig) => {
+        const token = localStorage.getItem('fitsense_token')
 
-    if (token) {
-        config.headers.Authorization = `Bearer ${token}`
+        if (token) {
+            config.headers.Authorization = `Bearer ${token}`
+        }
+
+        return config
+    },
+)
+
+api.interceptors.response.use(
+    (response) => response,
+    (error: AxiosError<{ message?: string; detail?: string }>) => {
+        if (error.response?.status === 401) {
+            localStorage.removeItem('fitsense_token')
+            localStorage.removeItem('fitsense_user')
+
+            if (window.location.pathname !== '/login') {
+                window.location.replace('/login')
+            }
+        }
+
+        return Promise.reject(error)
+    },
+)
+
+export function getApiErrorMessage(
+    error: unknown,
+): string {
+    if (axios.isAxiosError(error)) {
+        if (!error.response) {
+            return 'No se pudo conectar con el servidor. Comprueba tu conexión e inténtalo nuevamente.'
+        }
+
+        const status = error.response.status
+        const data = error.response.data as
+            | { message?: string; detail?: string }
+            | undefined
+
+        if (status === 400) {
+            return data?.message ?? data?.detail ??
+                'La solicitud contiene datos incorrectos.'
+        }
+
+        if (status === 403) {
+            return 'No tienes permisos para realizar esta operación.'
+        }
+
+        if (status === 404) {
+            return 'No se encontró el recurso solicitado.'
+        }
+
+        if (status === 429) {
+            return 'Se realizaron demasiadas solicitudes. Inténtalo más tarde.'
+        }
+
+        if (status >= 500) {
+            return 'El servidor presenta un problema. Inténtalo más tarde.'
+        }
+
+        return data?.message ?? data?.detail ??
+            'No se pudo completar la solicitud.'
     }
 
-    return config
-})
+    return 'Ocurrió un error inesperado.'
+}
 
 export default api

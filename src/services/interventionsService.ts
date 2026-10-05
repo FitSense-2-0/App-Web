@@ -1,9 +1,9 @@
 import api from './api'
 
 export interface Intervention {
-    interventionId: string
-    sourcePlanId: string
-    resultingPlanId: string
+    interventionId: number | string
+    sourcePlanId: number | string | null
+    resultingPlanId: number | string | null
     triggerAdherencePct: number | null
     triggerSkipReason: string | null
     adjustmentTypes: string[]
@@ -24,10 +24,16 @@ export interface Intervention {
 
 export const interventionsService = {
     async getHistory(): Promise<Intervention[]> {
-        const response = await api.get<Intervention[]>(
+        const { data } = await api.get<Intervention[]>(
             '/users/me/interventions',
         )
 
-        return response.data
+        if (!Array.isArray(data)) {
+            throw new Error(
+                'El servidor no devolvió un historial válido.',
+            )
+        }
+
+        return data
     },
 }

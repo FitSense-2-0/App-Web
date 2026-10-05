@@ -1,15 +1,28 @@
-
 import api from './api'
 
 export interface CurrentUser {
-    userId: string
+    userId: number | string
     email: string
     fullName: string
 }
 
 export const userService = {
     async getMe(): Promise<CurrentUser> {
-        const response = await api.get<CurrentUser>('/users/me')
-        return response.data
+        const { data } = await api.get<CurrentUser>(
+            '/users/me',
+        )
+
+        if (
+            !data ||
+            data.userId == null ||
+            !data.email ||
+            !data.fullName
+        ) {
+            throw new Error(
+                'El servidor devolvió información de usuario incompleta.',
+            )
+        }
+
+        return data
     },
 }
