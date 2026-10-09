@@ -8,7 +8,6 @@ import {
     CalendarDays,
     CheckCircle2,
     ClipboardList,
-    Clock3,
     RefreshCw,
     SlidersHorizontal,
     Zap,

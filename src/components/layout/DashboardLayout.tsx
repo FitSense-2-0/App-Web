@@ -1,6 +1,7 @@
 
 import { useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
+import { Activity } from 'lucide-react'
 import AppSidebar from './AppSidebar'
 import AppTopbar from './AppTopbar'
 import { userService } from '../../services/userService'
@@ -13,7 +14,7 @@ type DashboardLayoutProps = {
 export default function DashboardLayout({
     children,
 }: DashboardLayoutProps) {
-    const [userName, setUserName] = useState('Mi cuenta')
+    const [userName, setUserName] = useState('Administrador')
     const [userEmail, setUserEmail] = useState('')
 
     useEffect(() => {
@@ -25,14 +26,15 @@ export default function DashboardLayout({
 
                 if (active) {
                     setUserName(
-                        user.fullName?.trim() || user.email || 'Mi cuenta',
+                        user.fullName?.trim() ||
+                        user.email ||
+                        'Administrador',
                     )
                     setUserEmail(user.email)
                 }
             } catch {
-                // El interceptor de api.ts gestiona las sesiones vencidas.
                 if (active) {
-                    setUserName('Mi cuenta')
+                    setUserName('Administrador')
                     setUserEmail('')
                 }
             }
@@ -52,14 +54,27 @@ export default function DashboardLayout({
 
     return (
         <div className="dashboard-shell">
-            <AppTopbar {...profile} />
+            <header className="workspace-brand">
+                <span className="workspace-brand-mark">
+                    <Activity size={23} strokeWidth={2.5} />
+                </span>
+
+                <div className="workspace-brand-copy">
+                    <strong>FitSense</strong>
+                    <span>Administrador de Analíticas</span>
+                </div>
+            </header>
 
             <div className="dashboard-layout">
-                <AppSidebar {...profile} />
+                <AppSidebar />
 
-                <main className="main-content">
-                    <div className="page-enter">{children}</div>
-                </main>
+                <div className="dashboard-main">
+                    <AppTopbar {...profile} />
+
+                    <main className="main-content">
+                        <div className="page-enter">{children}</div>
+                    </main>
+                </div>
             </div>
         </div>
     )

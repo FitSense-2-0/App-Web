@@ -1,30 +1,124 @@
+
 .dashboard-shell {
+    --brand-column: 248px;
+    --header-height: 80px;
+
+    display: grid;
+    grid-template-columns: var(--brand-column) minmax(0, 1fr);
+    grid-template-rows: var(--header-height) minmax(0, 1fr);
+
     min-height: 100vh;
     background: var(--color-background);
 }
 
-.dashboard-layout {
+/* Marca: esquina superior izquierda */
+
+.workspace-brand {
+    box-sizing: border-box;
+    grid-column: 1;
+    grid-row: 1;
+
     display: flex;
-    min-height: calc(100vh - 72px);
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+    padding: 0 17px;
+
+    color: #f5f7f0;
+    background: #101510;
+    border: 1px solid #30362f;
+}
+
+.workspace-brand-mark {
+    display: grid;
+    place-items: center;
+    flex: 0 0 36px;
+    width: 36px;
+    height: 36px;
+
+    border-radius: 12px;
+    color: #111810;
+    background: #c7fe38;
+}
+
+.workspace-brand-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+}
+
+.workspace-brand-copy strong {
+    color: #f5f7f0;
+    font-size: 16px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.1;
+}
+
+.workspace-brand-copy span {
+    color: #899486;
+    font-size: 8px;
+    font-weight: 800;
+    letter-spacing: 1.2px;
+}
+
+/* La cuadrícula principal ocupa las dos filas */
+
+.dashboard-layout {
+    display: contents;
+}
+
+/* Sidebar: segunda fila de la primera columna */
+
+.dashboard-layout > .app-sidebar {
+    box-sizing: border-box;
+    grid-column: 1;
+    grid-row: 2;
+
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    padding: 24px 15px 16px;
+
+    border-right: 1px solid #30362f;
+    background: var(--color-dark);
+}
+
+/* Columna derecha: topbar arriba y contenido debajo */
+
+.dashboard-main {
+    grid-column: 2;
+    grid-row: 1 / 3;
+
+    display: grid;
+    grid-template-rows: var(--header-height) minmax(0, 1fr);
+    min-width: 0;
+    min-height: 100vh;
+}
+
+.dashboard-main > .app-topbar {
+    grid-row: 1;
+    min-width: 0;
+    min-height: var(--header-height);
 }
 
 .main-content {
-    flex: 1;
+    grid-row: 2;
     min-width: 0;
-    min-height: calc(100vh - 72px);
     padding: 28px 32px 40px;
     overflow-x: hidden;
 }
 
 .page-enter {
     width: 100%;
-    animation: layout-enter 0.35s ease both;
+    animation: layout-enter 0.3s ease both;
 }
 
 @keyframes layout-enter {
     from {
         opacity: 0;
-        transform: translateY(6px);
+        transform: translateY(5px);
     }
 
     to {
@@ -33,18 +127,62 @@
     }
 }
 
+/* Pantallas medianas */
+
 @media (max-width: 900px) {
+    .dashboard-shell {
+        --brand-column: 220px;
+    }
+
+    .workspace-brand {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
+    .dashboard-layout > .app-sidebar {
+        padding-right: 12px;
+        padding-left: 12px;
+    }
+
     .main-content {
         padding: 24px 20px 32px;
     }
 }
 
+/* Pantallas pequeñas */
+
 @media (max-width: 600px) {
-    .dashboard-layout {
-        min-height: calc(100vh - 64px);
+    .dashboard-shell {
+        --brand-column: 68px;
+        --header-height: 72px;
+    }
+
+    .workspace-brand {
+        justify-content: center;
+        padding: 0;
+    }
+
+    .workspace-brand-mark {
+        width: 40px;
+        height: 40px;
+        flex-basis: 40px;
+    }
+
+    .workspace-brand-copy {
+        display: none;
+    }
+
+    .dashboard-layout > .app-sidebar {
+        padding: 18px 8px;
     }
 
     .main-content {
         padding: 20px 14px 28px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .page-enter {
+        animation: none;
     }
 }

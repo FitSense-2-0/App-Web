@@ -1,11 +1,13 @@
 
 import {
+    Activity,
+    BarChart3,
+    ClipboardList,
     CircleHelp,
     LayoutDashboard,
     Users,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
-
 import './AppSidebar.css'
 
 const navigationItems = [
@@ -21,13 +23,31 @@ const navigationItems = [
         icon: Users,
         end: false,
     },
+    {
+        label: 'Analíticas',
+        path: '/dashboard/analytics',
+        icon: BarChart3,
+        end: false,
+    },
+    {
+        label: 'Métricas semanales',
+        path: '/dashboard/metrics',
+        icon: Activity,
+        end: false,
+    },
+    {
+        label: 'Intervenciones',
+        path: '/dashboard/interventions',
+        icon: ClipboardList,
+        end: false,
+    },
 ]
 
 export default function AppSidebar() {
     return (
         <aside className="app-sidebar">
             <div className="sidebar-content">
-                <p className="sidebar-label">ESPACIO DE TRABAJO</p>
+                <p className="sidebar-label">MENÚ PRINCIPAL</p>
 
                 <nav
                     className="sidebar-nav"
@@ -39,7 +59,6 @@ export default function AppSidebar() {
                                 key={path}
                                 to={path}
                                 end={end}
-                                aria-label={label}
                                 className={({ isActive }) =>
                                     `nav-item${isActive ? ' active' : ''}`
                                 }
@@ -60,14 +79,14 @@ export default function AppSidebar() {
             <div className="sidebar-bottom">
                 <section className="sidebar-help-card">
                     <span className="sidebar-help-icon">
-                        <CircleHelp size={18} />
+                        <CircleHelp size={18} strokeWidth={1.9} />
                     </span>
 
                     <div className="sidebar-help-copy">
-                        <strong>Centro de análisis</strong>
+                        <strong>Seguimiento de adherencia</strong>
                         <p>
-                            Consulta los indicadores y el seguimiento de la
-                            adherencia.
+                            Consulta los indicadores y la evolución
+                            del cumplimiento de los planes de ejercicio.
                         </p>
                     </div>
                 </section>
@@ -82,7 +101,7 @@ export default function AppSidebar() {
 
                     <div className="sidebar-account-info">
                         <strong>Administrador</strong>
-                        <span>Panel de FitSense</span>
+                        <span>Panel administrativo</span>
                     </div>
                 </div>
             </div>
