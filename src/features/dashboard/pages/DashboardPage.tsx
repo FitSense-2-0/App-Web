@@ -12,7 +12,6 @@ import { Link } from 'react-router-dom'
 import DashboardLayout from '../../../components/layout/DashboardLayout'
 import { metricsService, type WeeklyMetrics } from '../../../services/metricsService'
 import { interventionsService, type Intervention } from '../../../services/interventionsService'
-import { userService, type CurrentUser } from '../../../services/userService'
 import './DashboardPage.css'
 import {
     CartesianGrid,
@@ -26,7 +25,6 @@ import {
 import { getApiErrorMessage } from '../../../services/api'
 
 export default function DashboardPage() {
-    const [user, setUser] = useState<CurrentUser | null>(null)
     const [metrics, setMetrics] = useState<WeeklyMetrics | null>(null)
     const [interventions, setInterventions] = useState<Intervention[]>([])
     const [loading, setLoading] = useState(true)
@@ -40,18 +38,13 @@ export default function DashboardPage() {
             setLoading(true)
             setError('')
 
-            const [userResult, metricsResult, interventionsResult] =
+            const [metricsResult, interventionsResult] =
                 await Promise.allSettled([
-                    userService.getMe(),
                     metricsService.getWeeklyHistory(),
                     interventionsService.getHistory(),
                 ])
 
             if (!active) return
-
-            if (userResult.status === 'fulfilled') {
-                setUser(userResult.value)
-            }
 
             if (metricsResult.status === 'fulfilled') {
                 const history = [...metricsResult.value].sort(
@@ -79,15 +72,7 @@ export default function DashboardPage() {
                 )
             }
 
-            const failed = [
-                userResult,
-                metricsResult,
-                interventionsResult,
-            ].some(result => result.status === 'rejected')
-
-            if (userResult.status === 'rejected') {
-                setError(getApiErrorMessage(userResult.reason))
-            } else if (metricsResult.status === 'rejected') {
+            if (metricsResult.status === 'rejected') {
                 setError(getApiErrorMessage(metricsResult.reason))
             } else if (interventionsResult.status === 'rejected') {
                 setError(getApiErrorMessage(interventionsResult.reason))
@@ -141,7 +126,7 @@ export default function DashboardPage() {
     ]
 
     return (
-        <DashboardLayout userName={user?.fullName}>
+        <DashboardLayout>
             <div className="dashboard-page">
                 <section className="dashboard-welcome">
                     <div className="dashboard-welcome-copy">
@@ -153,9 +138,10 @@ export default function DashboardPage() {
                         <h1>Tu progreso, a tu ritmo.</h1>
 
                         <p>
-                            {user?.fullName
-                                ? `Hola, ${user.fullName}. Consulta tu adherencia y la evolución de tu plan de ejercicio.`
-                                : 'Consulta tu adherencia, revisa tu actividad y conoce cómo evoluciona tu plan de ejercicio.'}
+                            <p>
+                                Consulta la adherencia, las sesiones registradas
+                                y la evolución de los participantes de FitSense.
+                            </p>
                         </p>
 
                         <Link className="dashboard-primary-link" to="/dashboard/metrics">
@@ -213,15 +199,14 @@ export default function DashboardPage() {
                 )}
 
                 <section className="dashboard-section">
-                    <div className="dashboard-section-heading">
-                        <div>
-                            <span className="dashboard-eyebrow">RESUMEN GENERAL</span>
-                            <h2>Tu actividad semanal</h2>
-                        </div>
+                    <div className="dashboard-section-actions">
 
-                        <Link className="dashboard-secondary-link" to="/dashboard/metrics">
-                            Ver detalles
-                            <ArrowRight size={16} />
+                        <Link
+                            className="dashboard-analytics-link"
+                            to="/dashboard/analytics"
+                        >
+                            Ver analíticas
+                            <BarChart3 size={16} />
                         </Link>
                     </div>
 

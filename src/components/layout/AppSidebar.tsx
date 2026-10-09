@@ -1,21 +1,12 @@
 
 import {
-    Activity,
-    BarChart3,
     CircleHelp,
     LayoutDashboard,
-    UserRound,
-    Zap,
+    Users,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 
 import './AppSidebar.css'
-
-type AppSidebarProps = {
-    userName?: string
-    userRole?: string
-    avatarUrl?: string
-}
 
 const navigationItems = [
     {
@@ -25,57 +16,16 @@ const navigationItems = [
         end: true,
     },
     {
-        label: 'Analítica',
-        path: '/dashboard/analytics',
-        icon: BarChart3,
-        end: true,
-    },
-    {
-        label: 'Métricas semanales',
-        path: '/dashboard/metrics',
-        icon: Activity,
-        end: true,
-    },
-    {
-        label: 'Intervenciones',
-        path: '/dashboard/interventions',
-        icon: Zap,
-        end: true,
+        label: 'Participantes',
+        path: '/dashboard/participants',
+        icon: Users,
+        end: false,
     },
 ]
 
-export default function AppSidebar({
-    userName,
-    userRole,
-    avatarUrl,
-}: AppSidebarProps) {
-    const displayName = userName?.trim() || 'Mi cuenta'
-    const displayRole = userRole?.trim() || 'Administrador'
-
-    const initials = displayName
-        .split(/\s+/)
-        .filter(Boolean)
-        .slice(0, 2)
-        .map((part) => part[0].toUpperCase())
-        .join('')
-
+export default function AppSidebar() {
     return (
         <aside className="app-sidebar">
-            <NavLink
-                to="/dashboard"
-                className="sidebar-brand"
-                aria-label="FitSense, ir al dashboard"
-            >
-                <span className="sidebar-brand-mark">
-                    <Activity size={23} strokeWidth={2.5} />
-                </span>
-
-                <span className="sidebar-brand-copy">
-                    <strong>FitSense</strong>
-                    <span>ADMIN ANALYTICS</span>
-                </span>
-            </NavLink>
-
             <div className="sidebar-content">
                 <p className="sidebar-label">ESPACIO DE TRABAJO</p>
 
@@ -85,7 +35,6 @@ export default function AppSidebar({
                 >
                     {navigationItems.map(
                         ({ label, path, icon: Icon, end }) => (
-
                             <NavLink
                                 key={path}
                                 to={path}
@@ -103,7 +52,6 @@ export default function AppSidebar({
                                 />
                                 <span className="nav-text">{label}</span>
                             </NavLink>
-
                         ),
                     )}
                 </nav>
@@ -125,30 +73,17 @@ export default function AppSidebar({
                 </section>
 
                 <div className="sidebar-account">
-                    {avatarUrl ? (
-                        <img
-                            className="sidebar-account-avatar"
-                            src={avatarUrl}
-                            alt={`Foto de perfil de ${displayName}`}
-                        />
-                    ) : (
-                        <span
-                            className="sidebar-account-avatar"
-                            aria-hidden="true"
-                        >
-                            {initials || <UserRound size={20} />}
-                        </span>
-                    )}
+                    <span
+                        className="sidebar-account-avatar"
+                        aria-hidden="true"
+                    >
+                        A
+                    </span>
 
                     <div className="sidebar-account-info">
-                        <strong title={displayName}>{displayName}</strong>
-                        <span title={displayRole}>{displayRole}</span>
+                        <strong>Administrador</strong>
+                        <span>Panel de FitSense</span>
                     </div>
-                </div>
-
-                <div className="sidebar-footer">
-                    <span className="status-dot" aria-hidden="true" />
-                    <span>Panel de seguimiento</span>
                 </div>
             </div>
         </aside>

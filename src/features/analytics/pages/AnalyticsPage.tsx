@@ -1,15 +1,14 @@
 
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
     Activity,
-    ArrowLeft,
+    ArrowDownRight,
+    ArrowUpRight,
     BarChart3,
-    CheckCircle2,
-    ClipboardList,
-    Dumbbell,
+    CalendarDays,
+    RefreshCw,
     TrendingUp,
 } from 'lucide-react'
-import { Link } from 'react-router-dom'
 import {
     CartesianGrid,
     Line,
@@ -19,27 +18,25 @@ import {
     XAxis,
     YAxis,
 } from 'recharts'
+
 import DashboardLayout from '../../../components/layout/DashboardLayout'
 import {
     metricsService,
     type WeeklyMetrics,
 } from '../../../services/metricsService'
-import {
-    interventionsService,
-    type Intervention,
-} from '../../../services/interventionsService'
 import { getApiErrorMessage } from '../../../services/api'
 import './AnalyticsPage.css'
 
 interface TrendPoint {
     week: string
-    adherence: number
     date: string
+    adherence: number
 }
 
 function formatNumber(value: number | null | undefined): string {
-    if (value == null || !Number.isFinite(value)) return '—'
-    return value.toLocaleString('es-PE', {
+    if (value == null || !Number.isFinite(Number(value))) return '—'
+
+    return Number(value).toLocaleString('es-PE', {
         maximumFractionDigits: 2,
     })
 }
@@ -56,413 +53,497 @@ function formatDate(value: string): string {
     })
 }
 
+function getVariation(current: number, previous: number) {
+    const difference = current - previous
+
+    return {
+        difference,
+        label: `${difference > 0 ? '+' : ''}${formatNumber(difference)} pp`,
+    }
+}
+
+function AdherenceBar({
+    label,
+    value,
+    description,
+}: {
+    label: string
+    value: number | null | undefined
+    description: string
+}) {
+    const valid = value != null && Number.isFinite(Number(value))
+    const percentage = valid
+        ? Math.min(100, Math.max(0, Number(value)))
+        : 0
+
+    return (
+        <div className="analytics-breakdown-item">
+            <div className="analytics-breakdown-top">
+                <div>
+                    <strong>{label}</strong>
+                    <span>{description}</span>
+                </div>
+
+                <strong className="analytics-breakdown-value">
+                    {valid ? `${formatNumber(value)}%` : '—'}
+                </strong>
+            </div>
+
+            <div
+                className="analytics-progress-track"
+                role="progressbar"
+                aria-label={label}
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={valid ? percentage : 0}
+            >
+                <div
+                    className="analytics-progress-fill"
+                    style={{ width: `${percentage}%` }}
+                />
+            </div>
+        </div>
+    )
+}
+
 export default function AnalyticsPage() {
     const [metrics, setMetrics] = useState<WeeklyMetrics[]>([])
-    const [interventions, setInterventions] = useState<Intervention[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
 
-    useEffect(() => {
-        let active = true
+    const loadAnalytics = useCallback(async () => {
+        setLoading(true)
+        setError('')
 
-        async function loadAnalytics() {
-            setLoading(true)
-            setError('')
+        try {
+            const history = await metricsService.getWeeklyHistory()
 
-            const [metricsResult, interventionsResult] =
-                await Promise.allSettled([
-                    metricsService.getWeeklyHistory(),
-                    interventionsService.getHistory(),
-                ])
+            const orderedMetrics = [...history]
+                .filter(item =>
+                    Number.isFinite(Number(item.weightedAdherencePct)),
+                )
+                .sort(
+                    (a, b) =>
+                        new Date(a.weekStartDate).getTime() -
+                        new Date(b.weekStartDate).getTime(),
+                )
 
-            if (!active) return
-
-            if (metricsResult.status === 'fulfilled') {
-                const orderedMetrics = [...metricsResult.value]
-                    .filter(item =>
-                        Number.isFinite(Number(item.weightedAdherencePct)),
-                    )
-                    .sort(
-                        (a, b) =>
-                            new Date(a.weekStartDate).getTime() -
-                            new Date(b.weekStartDate).getTime(),
-                    )
-
-                setMetrics(orderedMetrics)
-            } else {
-                setMetrics([])
-            }
-
-            if (interventionsResult.status === 'fulfilled') {
-                const orderedInterventions = [...interventionsResult.value]
-                    .sort(
-                        (a, b) =>
-                            new Date(b.appliedAt).getTime() -
-                            new Date(a.appliedAt).getTime(),
-                    )
-
-                setInterventions(orderedInterventions)
-            } else {
-                setInterventions([])
-            }
-
-            if (metricsResult.status === 'rejected') {
-                setError(getApiErrorMessage(metricsResult.reason))
-            } else if (interventionsResult.status === 'rejected') {
-                setError(getApiErrorMessage(interventionsResult.reason))
-            }
-
+            setMetrics(orderedMetrics)
+        } catch (err) {
+            setMetrics([])
+            setError(getApiErrorMessage(err))
+        } finally {
             setLoading(false)
-        }
-
-        void loadAnalytics()
-
-        return () => {
-            active = false
         }
     }, [])
 
+    useEffect(() => {
+        void loadAnalytics()
+    }, [loadAnalytics])
+
     const latestMetrics = metrics[metrics.length - 1]
 
-    const trendData: TrendPoint[] = metrics.map(item => ({
-        week: formatDate(item.weekStartDate),
-        date: item.weekStartDate,
-        adherence: Math.min(
-            100,
-            Math.max(0, Number(item.weightedAdherencePct)),
-        ),
-    }))
+    const previousMetrics =
+        metrics.length > 1 ? metrics[metrics.length - 2] : undefined
 
-    const indicators = [
-        {
-            title: 'Adherencia ponderada',
-            value: latestMetrics
-                ? `${formatNumber(latestMetrics.weightedAdherencePct)}%`
-                : '—',
-            description: latestMetrics
-                ? `Semana del ${formatDate(latestMetrics.weekStartDate)}`
-                : 'Cumplimiento global del plan',
-            icon: TrendingUp,
-        },
-        {
-            title: 'Entrenamientos completados',
-            value: latestMetrics
-                ? formatNumber(latestMetrics.completedWorkouts)
-                : '—',
-            description: latestMetrics
-                ? `${formatNumber(latestMetrics.scheduledWorkouts)} sesiones programadas`
-                : 'Sesiones finalizadas',
-            icon: CheckCircle2,
-        },
-        {
-            title: 'Volumen ejecutado',
-            value: latestMetrics
-                ? formatNumber(latestMetrics.executedVolume)
-                : '—',
-            description: latestMetrics
-                ? `Planificado: ${formatNumber(latestMetrics.plannedWeekVolume)}`
-                : 'Volumen registrado de ejercicio',
-            icon: Dumbbell,
-        },
-        {
-            title: 'Intervenciones registradas',
-            value: interventions.length.toLocaleString('es-PE'),
-            description: 'Ajustes registrados en el plan',
-            icon: ClipboardList,
-        },
-    ]
+    const trendData: TrendPoint[] = useMemo(
+        () =>
+            metrics.map(item => ({
+                week: formatDate(item.weekStartDate),
+                date: item.weekStartDate,
+                adherence: Math.min(
+                    100,
+                    Math.max(0, Number(item.weightedAdherencePct)),
+                ),
+            })),
+        [metrics],
+    )
+
+    const adherenceVariation =
+        latestMetrics && previousMetrics
+            ? getVariation(
+                Number(latestMetrics.weightedAdherencePct),
+                Number(previousMetrics.weightedAdherencePct),
+            )
+            : null
+
+    const variationIsPositive =
+        adherenceVariation !== null &&
+        adherenceVariation.difference > 0
+
+    const variationIsNegative =
+        adherenceVariation !== null &&
+        adherenceVariation.difference < 0
 
     return (
         <DashboardLayout>
-            <div className="analytics-page">
-                <div className="page-heading">
+            <main className="analytics-page">
+                <header className="analytics-heading">
                     <div>
-                        <p className="eyebrow">ANÁLISIS DEL PROGRESO</p>
-                        <h1>Analítica</h1>
-                        <p className="page-description">
-                            Interpreta la evolución de tu adherencia y el cumplimiento
-                            del entrenamiento.
-                        </p>
-                    </div>
-
-                    <Link className="date-label" to="/dashboard">
-                        <ArrowLeft size={16} />
-                        Volver al dashboard
-                    </Link>
-                </div>
-
-                <section className="analytics-hero">
-                    <div className="analytics-hero-content">
-                        <span className="welcome-label">
-                            <span className="welcome-label-dot" />
-                            TU PROGRESO EN PERSPECTIVA
+                        <span className="analytics-eyebrow">
+                            ANÁLISIS DE DATOS
                         </span>
 
-                        <h2>Los datos ayudan a entender tu constancia.</h2>
+                        <h1>Analíticas</h1>
 
                         <p>
-                            Explora las tendencias de adherencia, el cumplimiento de las
-                            sesiones y los ajustes registrados en tu plan de ejercicio.
+                            Analiza la evolución de la adherencia y compara
+                            los resultados de diferentes semanas.
                         </p>
                     </div>
 
-                    <div className="analytics-hero-icon" aria-hidden="true">
-                        <BarChart3 size={35} />
-                    </div>
-                </section>
+                    <button
+                        type="button"
+                        className="analytics-refresh-button"
+                        onClick={() => void loadAnalytics()}
+                        disabled={loading}
+                    >
+                        <RefreshCw size={16} />
+                        {loading ? 'Actualizando…' : 'Actualizar datos'}
+                    </button>
+                </header>
 
                 {error && (
-                    <div role="alert" className="analytics-empty">
-                        <strong>No se pudo completar la carga</strong>
-                        <p>{error}</p>
+                    <section className="analytics-alert" role="alert">
+                        <div>
+                            <strong>
+                                No se pudieron cargar las métricas
+                            </strong>
+                            <p>{error}</p>
+                        </div>
+
                         <button
                             type="button"
-                            onClick={() => window.location.reload()}
+                            onClick={() => void loadAnalytics()}
+                            disabled={loading}
                         >
                             Reintentar
                         </button>
-                    </div>
+                    </section>
                 )}
 
-                <section className="section-heading">
+                <section className="analytics-analysis-header">
+                    <div className="analytics-analysis-icon">
+                        <BarChart3 size={23} />
+                    </div>
+
                     <div>
-                        <h2>Indicadores de seguimiento</h2>
+                        <h2>Análisis de adherencia</h2>
                         <p>
-                            {loading
-                                ? 'Cargando información de la API…'
-                                : 'Resumen de los últimos datos semanales disponibles.'}
+                            {latestMetrics
+                                ? `Último registro semanal: ${formatDate(latestMetrics.weekStartDate)}`
+                                : 'La información se mostrará cuando existan registros semanales.'}
                         </p>
                     </div>
 
-                    <span className="pending-label">
-                        <span className="status-dot" />
-                        {loading
-                            ? 'Cargando datos'
-                            : metrics.length > 0 || interventions.length > 0
-                                ? 'Datos recibidos'
-                                : 'Sin datos disponibles'}
+                    <span className="analytics-record-count">
+                        <CalendarDays size={15} />
+                        {metrics.length} semanas
                     </span>
                 </section>
 
-                <section className="metrics-grid analytics-indicator-grid">
-                    {indicators.map(({ title, value, description, icon: Icon }) => (
-                        <article className="metric-card" key={title}>
-                            <div className="metric-top">
-                                <span className="metric-icon">
-                                    <Icon size={19} />
-                                </span>
-                                <span className="metric-tag">ANÁLISIS</span>
-                            </div>
-
-                            <p>{title}</p>
-                            <h3>{loading ? '…' : value}</h3>
-
-                            <div className="metric-foot">
-                                <span className="neutral-indicator">
-                                    {description}
-                                </span>
-                            </div>
-                        </article>
-                    ))}
-                </section>
-
-                <section className="analytics-charts-grid">
-                    <article className="content-card analytics-chart-card">
-                        <div className="card-heading">
+                <section className="analytics-primary-grid">
+                    <article className="analytics-panel analytics-trend-panel">
+                        <div className="analytics-panel-heading">
                             <div>
-                                <h2>Evolución de la adherencia</h2>
-                                <p>Porcentaje registrado por semana</p>
+                                <span className="analytics-section-kicker">
+                                    TENDENCIA TEMPORAL
+                                </span>
+
+                                <h2>Adherencia por semana</h2>
+
+                                <p>
+                                    Evolución del porcentaje de adherencia
+                                    ponderada registrado.
+                                </p>
                             </div>
 
-                            <span className="card-icon">
-                                <TrendingUp size={18} />
+                            <span className="analytics-panel-icon">
+                                <TrendingUp size={19} />
                             </span>
                         </div>
 
                         {loading ? (
-                            <div className="analytics-empty">
-                                <strong>Cargando métricas semanales…</strong>
-                                <p>Consultando los registros disponibles.</p>
+                            <div className="analytics-state">
+                                <span className="analytics-loader" />
+                                <strong>Cargando evolución</strong>
+                                <p>Consultando los registros semanales.</p>
                             </div>
                         ) : trendData.length > 0 ? (
-                            <div className="analytics-chart">
-                                <ResponsiveContainer width="100%" height="100%">
-                                    <LineChart
-                                        data={trendData}
-                                        margin={{
-                                            top: 15,
-                                            right: 15,
-                                            left: -15,
-                                            bottom: 0,
-                                        }}
+                            <>
+                                <div className="analytics-chart">
+                                    <ResponsiveContainer
+                                        width="100%"
+                                        height="100%"
                                     >
-                                        <CartesianGrid
-                                            stroke="#e8ebdf"
-                                            strokeDasharray="4 4"
-                                            vertical={false}
-                                        />
-
-                                        <XAxis
-                                            dataKey="week"
-                                            tickLine={false}
-                                            axisLine={false}
-                                            minTickGap={20}
-                                            tick={{
-                                                fill: '#7a8375',
-                                                fontSize: 11,
+                                        <LineChart
+                                            data={trendData}
+                                            margin={{
+                                                top: 12,
+                                                right: 14,
+                                                left: -15,
+                                                bottom: 4,
                                             }}
-                                        />
+                                        >
+                                            <CartesianGrid
+                                                stroke="#e9ecdf"
+                                                strokeDasharray="4 4"
+                                                vertical={false}
+                                            />
 
-                                        <YAxis
-                                            domain={[0, 100]}
-                                            tickLine={false}
-                                            axisLine={false}
-                                            tick={{
-                                                fill: '#7a8375',
-                                                fontSize: 11,
-                                            }}
-                                            tickFormatter={value => `${value}%`}
-                                        />
+                                            <XAxis
+                                                dataKey="week"
+                                                tickLine={false}
+                                                axisLine={false}
+                                                minTickGap={22}
+                                                tick={{
+                                                    fill: '#7b8475',
+                                                    fontSize: 10,
+                                                }}
+                                            />
 
-                                        <Tooltip
-                                            labelFormatter={(_, payload) => {
-                                                const point = payload?.[0]?.payload as
-                                                    | TrendPoint
-                                                    | undefined
+                                            <YAxis
+                                                domain={[0, 100]}
+                                                tickLine={false}
+                                                axisLine={false}
+                                                tick={{
+                                                    fill: '#7b8475',
+                                                    fontSize: 10,
+                                                }}
+                                                tickFormatter={value =>
+                                                    `${value}%`
+                                                }
+                                            />
 
-                                                return point
-                                                    ? `Semana del ${formatDate(point.date)}`
-                                                    : ''
-                                            }}
-                                            formatter={value => [
-                                                `${formatNumber(Number(value))}%`,
-                                                'Adherencia',
-                                            ]}
-                                        />
+                                            <Tooltip
+                                                labelFormatter={(_, payload) => {
+                                                    const point = payload?.[0]
+                                                        ?.payload as
+                                                        | TrendPoint
+                                                        | undefined
 
-                                        <Line
-                                            type="monotone"
-                                            dataKey="adherence"
-                                            name="Adherencia"
-                                            stroke="#748e36"
-                                            strokeWidth={3}
-                                            dot={{
-                                                r: 4,
-                                                fill: '#c7fe38',
-                                                stroke: '#748e36',
-                                            }}
-                                            activeDot={{ r: 6 }}
-                                        />
-                                    </LineChart>
-                                </ResponsiveContainer>
-                            </div>
+                                                    return point
+                                                        ? `Semana del ${formatDate(point.date)}`
+                                                        : ''
+                                                }}
+                                                formatter={value => [
+                                                    `${formatNumber(Number(value))}%`,
+                                                    'Adherencia ponderada',
+                                                ]}
+                                            />
+
+                                            <Line
+                                                type="monotone"
+                                                dataKey="adherence"
+                                                name="Adherencia ponderada"
+                                                stroke="#748e36"
+                                                strokeWidth={3}
+                                                dot={{
+                                                    r: 4,
+                                                    fill: '#c7fe38',
+                                                    stroke: '#748e36',
+                                                    strokeWidth: 2,
+                                                }}
+                                                activeDot={{ r: 6 }}
+                                                connectNulls={false}
+                                            />
+                                        </LineChart>
+                                    </ResponsiveContainer>
+                                </div>
+
+                                <div className="analytics-chart-legend">
+                                    <span className="analytics-legend-dot" />
+                                    Adherencia ponderada
+
+                                    <span className="analytics-chart-note">
+                                        {trendData.length === 1
+                                            ? 'Se necesita otra semana para comparar.'
+                                            : `${trendData.length} registros en orden cronológico.`}
+                                    </span>
+                                </div>
+                            </>
                         ) : (
-                            <div className="analytics-empty">
-                                <span className="analytics-empty-icon">
-                                    <TrendingUp size={23} />
+                            <div className="analytics-state">
+                                <span className="analytics-state-icon">
+                                    <TrendingUp size={24} />
                                 </span>
 
-                                <strong>Sin métricas semanales</strong>
+                                <strong>Sin registros para analizar</strong>
 
                                 <p>
-                                    La gráfica aparecerá cuando la API devuelva registros
-                                    de adherencia para las semanas del usuario.
+                                    La gráfica aparecerá cuando el servicio
+                                    devuelva métricas semanales.
                                 </p>
-
-                                <Link
-                                    className="analytics-text-link"
-                                    to="/dashboard/metrics"
-                                >
-                                    Consultar métricas
-                                    <span>→</span>
-                                </Link>
                             </div>
                         )}
                     </article>
 
-                    <article className="content-card analytics-chart-card">
-                        <div className="card-heading">
+                    <article className="analytics-panel analytics-comparison-panel">
+                        <div className="analytics-panel-heading">
                             <div>
-                                <h2>Actividad y ajustes</h2>
-                                <p>Intervenciones más recientes</p>
+                                <span className="analytics-section-kicker">
+                                    COMPARACIÓN
+                                </span>
+
+                                <h2>Variación semanal</h2>
+
+                                <p>
+                                    Diferencia entre los dos últimos registros
+                                    disponibles.
+                                </p>
                             </div>
 
-                            <span className="card-icon">
-                                <Activity size={18} />
+                            <span className="analytics-panel-icon">
+                                <Activity size={19} />
                             </span>
                         </div>
 
                         {loading ? (
-                            <div className="analytics-empty">
-                                <strong>Cargando intervenciones…</strong>
+                            <div className="analytics-state compact">
+                                <span className="analytics-loader" />
+                                <p>Calculando comparación…</p>
                             </div>
-                        ) : interventions.length > 0 ? (
-                            <div className="analytics-interventions-list">
-                                {interventions.slice(0, 5).map(item => (
-                                    <div
-                                        className="analytics-intervention-item"
-                                        key={item.interventionId}
+                        ) : latestMetrics &&
+                            previousMetrics &&
+                            adherenceVariation ? (
+                            <>
+                                <div className="analytics-comparison-value">
+                                    <span
+                                        className={
+                                            variationIsPositive
+                                                ? 'analytics-variation positive'
+                                                : variationIsNegative
+                                                    ? 'analytics-variation negative'
+                                                    : 'analytics-variation neutral'
+                                        }
                                     >
-                                        <span className="analytics-empty-icon">
-                                            <ClipboardList size={19} />
-                                        </span>
+                                        {variationIsPositive ? (
+                                            <ArrowUpRight size={22} />
+                                        ) : variationIsNegative ? (
+                                            <ArrowDownRight size={22} />
+                                        ) : (
+                                            <Activity size={20} />
+                                        )}
 
-                                        <div>
-                                            <strong>
-                                                {item.messageShown ||
-                                                    'Ajuste registrado en el plan'}
-                                            </strong>
-                                            <p>
-                                                {formatDate(item.appliedAt)}
-                                                {item.adherenceAfterPct != null
-                                                    ? ` · Adherencia posterior: ${formatNumber(item.adherenceAfterPct)}%`
-                                                    : ''}
-                                            </p>
-                                        </div>
+                                        {adherenceVariation.label}
+                                    </span>
+
+                                    <span className="analytics-comparison-caption">
+                                        Variación de adherencia
+                                    </span>
+                                </div>
+
+                                <div className="analytics-comparison-rows">
+                                    <div>
+                                        <span>Registro anterior</span>
+                                        <strong>
+                                            {formatNumber(
+                                                previousMetrics.weightedAdherencePct,
+                                            )}
+                                            %
+                                        </strong>
                                     </div>
-                                ))}
 
-                                <Link
-                                    className="analytics-text-link"
-                                    to="/dashboard/interventions"
-                                >
-                                    Ver todas las intervenciones
-                                    <span>→</span>
-                                </Link>
-                            </div>
+                                    <div>
+                                        <span>Registro más reciente</span>
+                                        <strong>
+                                            {formatNumber(
+                                                latestMetrics.weightedAdherencePct,
+                                            )}
+                                            %
+                                        </strong>
+                                    </div>
+                                </div>
+
+                                <p className="analytics-method-note">
+                                    La diferencia se expresa en puntos
+                                    porcentuales (pp), no como crecimiento
+                                    porcentual relativo.
+                                </p>
+                            </>
                         ) : (
-                            <div className="analytics-empty">
-                                <span className="analytics-empty-icon">
-                                    <ClipboardList size={23} />
+                            <div className="analytics-state compact">
+                                <span className="analytics-state-icon">
+                                    <Activity size={23} />
                                 </span>
 
-                                <strong>Sin intervenciones registradas</strong>
+                                <strong>Comparación no disponible</strong>
 
                                 <p>
-                                    Aquí aparecerán los ajustes del plan que devuelva la API.
+                                    Se necesitan al menos dos registros
+                                    semanales para calcular la variación.
                                 </p>
-
-                                <Link
-                                    className="analytics-text-link"
-                                    to="/dashboard/interventions"
-                                >
-                                    Consultar intervenciones
-                                    <span>→</span>
-                                </Link>
                             </div>
                         )}
                     </article>
                 </section>
 
-                <footer className="dashboard-footer">
-                    <span>FitSense · Analítica</span>
+                <section className="analytics-panel analytics-breakdown-panel">
+                    <div className="analytics-panel-heading">
+                        <div>
+                            <span className="analytics-section-kicker">
+                                DESGLOSE
+                            </span>
+
+                            <h2>Componentes de la adherencia</h2>
+
+                            <p>
+                                Indicadores correspondientes al registro
+                                semanal más reciente disponible.
+                            </p>
+                        </div>
+
+                        <span className="analytics-panel-icon">
+                            <BarChart3 size={19} />
+                        </span>
+                    </div>
+
+                    {loading ? (
+                        <div className="analytics-state compact">
+                            <span className="analytics-loader" />
+                            <p>Cargando componentes…</p>
+                        </div>
+                    ) : latestMetrics ? (
+                        <div className="analytics-breakdown-grid">
+                            <AdherenceBar
+                                label="Adherencia de frecuencia"
+                                value={latestMetrics.frequencyAdherencePct}
+                                description="Cumplimiento de la frecuencia prevista"
+                            />
+
+                            <AdherenceBar
+                                label="Adherencia de entrenamientos"
+                                value={latestMetrics.workoutAdherencePct}
+                                description="Sesiones realizadas frente a las previstas"
+                            />
+
+                            <AdherenceBar
+                                label="Adherencia de ejercicios"
+                                value={latestMetrics.exerciseAdherencePct}
+                                description="Ejercicios completados frente a los asignados"
+                            />
+                        </div>
+                    ) : (
+                        <div className="analytics-state compact">
+                            <strong>Sin componentes para mostrar</strong>
+
+                            <p>
+                                No se recibieron métricas semanales para
+                                construir este desglose.
+                            </p>
+                        </div>
+                    )}
+                </section>
+
+                <footer className="analytics-footer">
+                    <span>FitSense · Analíticas</span>
+
                     <span>
-                        {loading
-                            ? 'Cargando información…'
-                            : 'Indicadores calculados a partir de los registros recibidos de la API.'}
+                        Análisis basado en los registros semanales devueltos
+                        por el servicio.
                     </span>
                 </footer>
-            </div>
+            </main>
         </DashboardLayout>
     )
 }

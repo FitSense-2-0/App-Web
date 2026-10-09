@@ -1,7 +1,5 @@
-import axios, {
-    AxiosError,
-    type InternalAxiosRequestConfig,
-} from 'axios'
+
+import axios, { AxiosError } from 'axios'
 
 const baseURL = import.meta.env.VITE_API_BASE_URL?.trim()
 
@@ -20,37 +18,14 @@ const api = axios.create({
     },
 })
 
-api.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => {
-        const token = localStorage.getItem('fitsense_token')
-
-        if (token) {
-            config.headers.Authorization = `Bearer ${token}`
-        }
-
-        return config
-    },
-)
-
 api.interceptors.response.use(
     (response) => response,
     (error: AxiosError<{ message?: string; detail?: string }>) => {
-        if (error.response?.status === 401) {
-            localStorage.removeItem('fitsense_token')
-            localStorage.removeItem('fitsense_user')
-
-            if (window.location.pathname !== '/login') {
-                window.location.replace('/login')
-            }
-        }
-
         return Promise.reject(error)
     },
 )
 
-export function getApiErrorMessage(
-    error: unknown,
-): string {
+export function getApiErrorMessage(error: unknown): string {
     if (axios.isAxiosError(error)) {
         if (!error.response) {
             return 'No se pudo conectar con el servidor. Comprueba tu conexión e inténtalo nuevamente.'
@@ -64,6 +39,10 @@ export function getApiErrorMessage(
         if (status === 400) {
             return data?.message ?? data?.detail ??
                 'La solicitud contiene datos incorrectos.'
+        }
+
+        if (status === 401) {
+            return 'La solicitud requiere credenciales válidas para acceder al servicio.'
         }
 
         if (status === 403) {

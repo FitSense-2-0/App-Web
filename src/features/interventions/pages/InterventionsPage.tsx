@@ -1,82 +1,100 @@
 
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
     Activity,
     ArrowDownRight,
     ArrowRight,
     ArrowUpRight,
     CalendarDays,
+    CheckCircle2,
     ClipboardList,
     Clock3,
+    RefreshCw,
     SlidersHorizontal,
     Zap,
 } from 'lucide-react'
+
 import DashboardLayout from '../../../components/layout/DashboardLayout'
-import './InterventionsPage.css'
-import { useEffect, useState } from 'react'
 import {
     interventionsService,
     type Intervention,
 } from '../../../services/interventionsService'
 import { getApiErrorMessage } from '../../../services/api'
+import './InterventionsPage.css'
 
-const interventionSummary = [
-    {
-        title: 'Intervenciones registradas',
-        value: '—',
-        description: 'Ajustes aplicados al plan',
-        icon: ClipboardList,
-    },
-    {
-        title: 'Volumen ajustado',
-        value: '—',
-        description: 'Variación del volumen semanal',
-        icon: Activity,
-    },
-    {
-        title: 'Adherencia posterior',
-        value: '—',
-        description: 'Cumplimiento después del ajuste',
-        icon: SlidersHorizontal,
-    },
-]
+function formatNumber(value: number | null | undefined): string {
+    if (value == null || !Number.isFinite(Number(value))) return '—'
 
+    return Number(value).toLocaleString('es-PE', {
+        maximumFractionDigits: 2,
+    })
+}
+
+function formatDate(value: string, includeTime = false): string {
+    const date = new Date(value)
+
+    if (Number.isNaN(date.getTime())) return value || 'Fecha no disponible'
+
+    return date.toLocaleString('es-PE', {
+        day: '2-digit',
+        month: 'short',
+        year: 'numeric',
+        ...(includeTime ? { hour: '2-digit', minute: '2-digit' } : {}),
+    })
+}
+
+function formatSignedPercentage(value: number | null | undefined): string {
+    if (value == null || !Number.isFinite(Number(value))) return '—'
+
+    const number = Number(value)
+    return `${number > 0 ? '+' : ''}${formatNumber(number)}%`
+}
 
 export default function InterventionsPage() {
     const [interventions, setInterventions] = useState<Intervention[]>([])
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
 
-    async function loadInterventions() {
+    const loadInterventions = useCallback(async () => {
         setLoading(true)
         setError('')
 
         try {
             const data = await interventionsService.getHistory()
-            setInterventions(
-                [...data].sort(
-                    (a, b) =>
-                        new Date(b.appliedAt).getTime() -
-                        new Date(a.appliedAt).getTime(),
-                ),
+
+            const orderedData = [...data].sort(
+                (a, b) =>
+                    new Date(b.appliedAt).getTime() -
+                    new Date(a.appliedAt).getTime(),
             )
+
+            setInterventions(orderedData)
         } catch (err: unknown) {
             setError(getApiErrorMessage(err))
         } finally {
             setLoading(false)
         }
-    }
+    }, [])
 
     useEffect(() => {
         void loadInterventions()
-    }, [])
+    }, [loadInterventions])
 
-    const latestWithAdherence = interventions.find(
-        item => item.adherenceAfterPct != null,
+    const latestWithAdherence = useMemo(
+        () => interventions.find(item => item.adherenceAfterPct != null),
+        [interventions],
     )
 
-    const volumeChanges = interventions
-        .map(item => item.actualVolumeChangePct)
-        .filter((value): value is number => value != null)
+    const volumeChanges = useMemo(
+        () =>
+            interventions
+                .map(item => item.actualVolumeChangePct)
+                .filter(
+                    (value): value is number =>
+                        value != null && Number.isFinite(Number(value)),
+                ),
+        [interventions],
+    )
 
     const averageVolumeChange =
         volumeChanges.length > 0
@@ -84,20 +102,20 @@ export default function InterventionsPage() {
             volumeChanges.length
             : null
 
-    const interventionSummary = [
+    const summaryItems = [
         {
             title: 'Intervenciones registradas',
             value: interventions.length.toLocaleString('es-PE'),
-            description: 'Ajustes devueltos por la API',
+            description: 'Registros devueltos por el servicio',
             icon: ClipboardList,
         },
         {
             title: 'Variación media del volumen',
-            value:
-                averageVolumeChange == null
-                    ? '—'
-                    : `${averageVolumeChange > 0 ? '+' : ''}${averageVolumeChange.toLocaleString('es-PE', { maximumFractionDigits: 1 })}%`,
-            description: 'Promedio de variaciones registradas',
+            value: formatSignedPercentage(averageVolumeChange),
+            description:
+                volumeChanges.length > 0
+                    ? `Calculada sobre ${volumeChanges.length} registros con variación`
+                    : 'Sin variaciones registradas',
             icon: Activity,
         },
         {
@@ -105,9 +123,9 @@ export default function InterventionsPage() {
             value:
                 latestWithAdherence?.adherenceAfterPct == null
                     ? '—'
-                    : `${latestWithAdherence.adherenceAfterPct}%`,
+                    : `${formatNumber(latestWithAdherence.adherenceAfterPct)}%`,
             description: latestWithAdherence
-                ? `Registro del ${new Date(latestWithAdherence.appliedAt).toLocaleDateString('es-PE')}`
+                ? `Registro del ${formatDate(latestWithAdherence.appliedAt)}`
                 : 'Sin resultados posteriores registrados',
             icon: SlidersHorizontal,
         },
@@ -115,23 +133,31 @@ export default function InterventionsPage() {
 
     return (
         <DashboardLayout>
-            <div className="interventions-page">
+            <main className="interventions-page">
                 <header className="interventions-heading">
                     <div>
                         <span className="interventions-eyebrow">
                             PERSONALIZACIÓN DEL ENTRENAMIENTO
                         </span>
+
                         <h1>Intervenciones</h1>
+
                         <p>
-                            Consulta los ajustes realizados al plan de ejercicio
-                            y el seguimiento de sus resultados.
+                            Consulta los ajustes registrados en el plan de
+                            ejercicio, sus variaciones y los resultados
+                            posteriores disponibles.
                         </p>
                     </div>
 
-                    <span className="interventions-date-label">
-                        <CalendarDays size={17} />
-                        Historial de ajustes
-                    </span>
+                    <button
+                        type="button"
+                        className="interventions-refresh-button"
+                        onClick={() => void loadInterventions()}
+                        disabled={loading}
+                    >
+                        <RefreshCw size={16} />
+                        {loading ? 'Actualizando…' : 'Actualizar historial'}
+                    </button>
                 </header>
 
                 <section className="interventions-hero">
@@ -140,10 +166,13 @@ export default function InterventionsPage() {
                             <span />
                             AJUSTES PERSONALIZADOS
                         </span>
+
                         <h2>Un plan que se adapta a tu progreso.</h2>
+
                         <p>
-                            Revisa los ajustes registrados, los cambios aplicados
-                            y los resultados posteriores disponibles.
+                            Revisa cuándo se registró cada intervención,
+                            qué cambios se aplicaron y qué datos de adherencia
+                            están disponibles para su seguimiento.
                         </p>
                     </div>
 
@@ -160,16 +189,29 @@ export default function InterventionsPage() {
                 </section>
 
                 {error && (
-                    <div className="interventions-empty-state" role="alert">
-                        <h3>No se pudo cargar el historial</h3>
-                        <p>{error}</p>
+                    <section
+                        className="interventions-error"
+                        role="alert"
+                    >
+                        <span className="interventions-error-icon">
+                            <Activity size={20} />
+                        </span>
+
+                        <div>
+                            <strong>
+                                No se pudo cargar el historial
+                            </strong>
+                            <p>{error}</p>
+                        </div>
+
                         <button
                             type="button"
                             onClick={() => void loadInterventions()}
+                            disabled={loading}
                         >
                             Reintentar
                         </button>
-                    </div>
+                    </section>
                 )}
 
                 <section className="interventions-section">
@@ -177,11 +219,21 @@ export default function InterventionsPage() {
                         <div>
                             <h2>Resumen de intervenciones</h2>
                             <p>
-                                Indicadores de los ajustes y sus resultados.
+                                Indicadores calculados a partir de los
+                                registros disponibles.
                             </p>
                         </div>
 
-                        <span className="interventions-pending-badge">
+                        <span
+                            className={`interventions-status ${loading
+                                ? 'is-loading'
+                                : error
+                                    ? 'is-error'
+                                    : interventions.length > 0
+                                        ? 'is-available'
+                                        : 'is-empty'
+                                }`}
+                        >
                             <span />
                             {loading
                                 ? 'Cargando datos'
@@ -194,7 +246,7 @@ export default function InterventionsPage() {
                     </div>
 
                     <div className="interventions-summary-grid">
-                        {interventionSummary.map(
+                        {summaryItems.map(
                             ({ title, value, description, icon: Icon }) => (
                                 <article
                                     className="interventions-summary-card"
@@ -202,7 +254,7 @@ export default function InterventionsPage() {
                                 >
                                     <div className="interventions-summary-top">
                                         <span className="interventions-summary-icon">
-                                            <Icon size={20} strokeWidth={1.9} />
+                                            <Icon size={20} />
                                         </span>
                                         <span className="interventions-summary-tag">
                                             RESUMEN
@@ -210,9 +262,11 @@ export default function InterventionsPage() {
                                     </div>
 
                                     <h3>{title}</h3>
+
                                     <strong className="interventions-summary-value">
-                                        {loading ? '…' : value}
+                                        {loading ? '…' : error ? '—' : value}
                                     </strong>
+
                                     <p>{description}</p>
                                 </article>
                             ),
@@ -223,11 +277,16 @@ export default function InterventionsPage() {
                 <section className="interventions-history-panel">
                     <div className="interventions-panel-heading">
                         <div>
+                            <span className="interventions-eyebrow">
+                                REGISTROS
+                            </span>
                             <h2>Historial de intervenciones</h2>
                             <p>
-                                Registro de ajustes y resultados posteriores.
+                                Ajustes ordenados del más reciente al más
+                                antiguo.
                             </p>
                         </div>
+
                         <span className="interventions-panel-icon">
                             <ClipboardList size={19} />
                         </span>
@@ -235,24 +294,39 @@ export default function InterventionsPage() {
 
                     {loading ? (
                         <div className="interventions-empty-state">
-                            <Clock3 size={25} />
+                            <span className="interventions-loader" />
                             <h3>Cargando intervenciones…</h3>
-                            <p>Consultando los registros de la API.</p>
+                            <p>
+                                Consultando los registros del servicio.
+                            </p>
+                        </div>
+                    ) : error ? (
+                        <div className="interventions-empty-state">
+                            <span className="interventions-empty-icon">
+                                <Activity size={25} />
+                            </span>
+                            <h3>Historial no disponible</h3>
+                            <p>
+                                No podemos confirmar si existen intervenciones
+                                hasta recuperar la respuesta del servicio.
+                            </p>
+                            <button
+                                type="button"
+                                onClick={() => void loadInterventions()}
+                                disabled={loading}
+                            >
+                                Reintentar consulta
+                            </button>
                         </div>
                     ) : interventions.length === 0 ? (
                         <div className="interventions-empty-state">
                             <span className="interventions-empty-icon">
                                 <SlidersHorizontal size={26} />
                             </span>
-                            <h3>
-                                {error
-                                    ? 'Historial no disponible'
-                                    : 'Aún no hay intervenciones registradas'}
-                            </h3>
+                            <h3>Aún no hay intervenciones registradas</h3>
                             <p>
-                                {error
-                                    ? 'No fue posible obtener los registros del servidor.'
-                                    : 'Los ajustes aparecerán aquí cuando la API devuelva intervenciones registradas.'}
+                                Los registros aparecerán aquí cuando el
+                                servicio devuelva intervenciones guardadas.
                             </p>
                         </div>
                     ) : (
@@ -266,18 +340,23 @@ export default function InterventionsPage() {
                                         <span className="interventions-summary-icon">
                                             <SlidersHorizontal size={20} />
                                         </span>
+
                                         <div>
                                             <h3>
                                                 {item.messageShown ||
-                                                    'Ajuste personalizado del plan'}
+                                                    'Intervención registrada'}
                                             </h3>
+
                                             <p>
                                                 <CalendarDays size={14} />
-                                                {new Date(
-                                                    item.appliedAt,
-                                                ).toLocaleString('es-PE')}
+                                                {formatDate(item.appliedAt, true)}
                                             </p>
                                         </div>
+
+                                        <span className="interventions-record-badge">
+                                            <CheckCircle2 size={14} />
+                                            Registrada
+                                        </span>
                                     </div>
 
                                     <div className="interventions-live-details">
@@ -291,11 +370,13 @@ export default function InterventionsPage() {
                                         </div>
 
                                         <div>
-                                            <span>Adherencia que activó el ajuste</span>
+                                            <span>
+                                                Adherencia que activó el ajuste
+                                            </span>
                                             <strong>
                                                 {item.triggerAdherencePct == null
-                                                    ? '—'
-                                                    : `${item.triggerAdherencePct}%`}
+                                                    ? 'Sin registro'
+                                                    : `${formatNumber(item.triggerAdherencePct)}%`}
                                             </strong>
                                         </div>
 
@@ -303,8 +384,8 @@ export default function InterventionsPage() {
                                             <span>Volumen anterior</span>
                                             <strong>
                                                 {item.previousWeekVolume == null
-                                                    ? '—'
-                                                    : item.previousWeekVolume.toLocaleString('es-PE')}
+                                                    ? 'Sin registro'
+                                                    : formatNumber(item.previousWeekVolume)}
                                             </strong>
                                         </div>
 
@@ -312,17 +393,27 @@ export default function InterventionsPage() {
                                             <span>Volumen resultante</span>
                                             <strong>
                                                 {item.resultingWeekVolume == null
-                                                    ? '—'
-                                                    : item.resultingWeekVolume.toLocaleString('es-PE')}
+                                                    ? 'Sin registro'
+                                                    : formatNumber(item.resultingWeekVolume)}
                                             </strong>
                                         </div>
 
                                         <div>
                                             <span>Variación real del volumen</span>
-                                            <strong>
-                                                {item.actualVolumeChangePct == null
-                                                    ? '—'
-                                                    : `${item.actualVolumeChangePct > 0 ? '+' : ''}${item.actualVolumeChangePct}%`}
+                                            <strong
+                                                className={
+                                                    item.actualVolumeChangePct == null
+                                                        ? ''
+                                                        : item.actualVolumeChangePct > 0
+                                                            ? 'interventions-value-positive'
+                                                            : item.actualVolumeChangePct < 0
+                                                                ? 'interventions-value-negative'
+                                                                : ''
+                                                }
+                                            >
+                                                {formatSignedPercentage(
+                                                    item.actualVolumeChangePct,
+                                                )}
                                             </strong>
                                         </div>
 
@@ -331,7 +422,7 @@ export default function InterventionsPage() {
                                             <strong>
                                                 {item.adherenceAfterPct == null
                                                     ? 'Pendiente de registro'
-                                                    : `${item.adherenceAfterPct}%`}
+                                                    : `${formatNumber(item.adherenceAfterPct)}%`}
                                             </strong>
                                         </div>
                                     </div>
@@ -346,10 +437,11 @@ export default function InterventionsPage() {
                         <span className="interventions-explanation-icon">
                             <Activity size={19} />
                         </span>
+
                         <div>
-                            <h2>¿Qué puedes consultar?</h2>
+                            <h2>Cómo interpretar los registros</h2>
                             <p>
-                                Información para interpretar los ajustes del plan.
+                                Qué representa cada dato de una intervención.
                             </p>
                         </div>
                     </div>
@@ -359,13 +451,16 @@ export default function InterventionsPage() {
                             <span className="interventions-explanation-symbol">
                                 <SlidersHorizontal size={18} />
                             </span>
+
                             <div>
                                 <h3>Tipo de ajuste</h3>
                                 <p>
-                                    Cambios registrados en volumen, duración,
-                                    frecuencia o dificultad.
+                                    Tipos de modificación registrados por el
+                                    servicio. Si no se proporcionan, se indica
+                                    que el dato no está especificado.
                                 </p>
                             </div>
+
                             <ArrowRight
                                 className="interventions-explanation-arrow"
                                 size={17}
@@ -376,13 +471,15 @@ export default function InterventionsPage() {
                             <span className="interventions-explanation-symbol">
                                 <ArrowDownRight size={18} />
                             </span>
+
                             <div>
-                                <h3>Variación del plan</h3>
+                                <h3>Variación del volumen</h3>
                                 <p>
-                                    Comparación del volumen anterior con el
-                                    volumen resultante del ajuste.
+                                    Porcentaje de cambio informado para comparar
+                                    el volumen anterior con el resultante.
                                 </p>
                             </div>
+
                             <ArrowRight
                                 className="interventions-explanation-arrow"
                                 size={17}
@@ -393,13 +490,17 @@ export default function InterventionsPage() {
                             <span className="interventions-explanation-symbol">
                                 <ArrowUpRight size={18} />
                             </span>
+
                             <div>
                                 <h3>Resultado posterior</h3>
                                 <p>
-                                    Adherencia posterior, cuando ese dato
-                                    esté disponible.
+                                    Porcentaje de adherencia posterior cuando
+                                    existe un valor registrado. Su presencia
+                                    no demuestra por sí sola que el ajuste
+                                    haya causado el resultado.
                                 </p>
                             </div>
+
                             <ArrowRight
                                 className="interventions-explanation-arrow"
                                 size={17}
@@ -413,10 +514,12 @@ export default function InterventionsPage() {
                     <span>
                         {loading
                             ? 'Cargando información…'
-                            : 'Información obtenida de la API de FitSense.'}
+                            : error
+                                ? 'No se pudo verificar la información del servicio.'
+                                : 'Información basada en los registros devueltos por el servicio.'}
                     </span>
                 </footer>
-            </div>
+            </main>
         </DashboardLayout>
     )
 }

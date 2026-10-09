@@ -1,7 +1,5 @@
-import { Activity, LogOut } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { Activity } from 'lucide-react'
 import './AppTopbar.css'
-import { authService } from '../../services/authService'
 
 type AppTopbarProps = {
     userName?: string
@@ -14,9 +12,8 @@ export default function AppTopbar({
     userRole,
     avatarUrl,
 }: AppTopbarProps) {
-    const navigate = useNavigate()
 
-    const displayName = userName?.trim() || 'Mi cuenta'
+    const displayName = userName?.trim() || 'Administrador'
     const displayRole = userRole?.trim() || 'Cuenta FitSense'
 
     const initials = displayName
@@ -25,17 +22,6 @@ export default function AppTopbar({
         .slice(0, 2)
         .map((part) => part[0].toUpperCase())
         .join('')
-
-    function handleLogout() {
-        // Limpia la sesión de prueba local.
-        localStorage.removeItem('fitsense_local_session')
-        localStorage.removeItem('fitsense_user')
-
-        // Conserva la limpieza de credenciales del servicio existente.
-        authService.logout()
-
-        navigate('/login', { replace: true })
-    }
 
     return (
         <header className="app-topbar">
@@ -69,17 +55,6 @@ export default function AppTopbar({
                         <strong title={displayName}>{displayName}</strong>
                         <small title={displayRole}>{displayRole}</small>
                     </span>
-
-                    <button
-                        className="topbar-logout"
-                        type="button"
-                        onClick={handleLogout}
-                        aria-label="Cerrar sesión"
-                        title="Cerrar sesión"
-                    >
-                        <LogOut size={17} strokeWidth={2} aria-hidden="true" />
-                        <span>Cerrar sesión</span>
-                    </button>
                 </div>
             </div>
         </header>
