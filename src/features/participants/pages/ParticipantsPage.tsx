@@ -1,5 +1,5 @@
 
-import { useMemo, useState } from "react";
+import { useMemo, useState } from 'react'
 import {
     Search,
     Users,
@@ -7,51 +7,53 @@ import {
     UserCheck,
     ChevronRight,
     SlidersHorizontal,
-    Info,
-} from "lucide-react";
-import "./ParticipantsPage.css";
-import DashboardLayout from "../../../components/layout/DashboardLayout";
-
-type ParticipantLevel = "Principiante" | "Intermedio" | "Avanzado";
-type ParticipantStatus = "Activo" | "Inactivo";
-
-interface Participant {
-    id: string;
-    name: string;
-    email: string;
-    level: ParticipantLevel;
-    goal: string;
-    adherence: number | null;
-    status: ParticipantStatus;
-}
-
-// La colección empieza vacía: no se muestran participantes ficticios.
-const participants: Participant[] = [];
+} from 'lucide-react'
+import { Link } from 'react-router-dom'
+import './ParticipantsPage.css'
+import DashboardLayout from '../../../components/layout/DashboardLayout'
+import { demoParticipants } from '../data/Participants'
 
 export default function ParticipantsPage() {
-    const [search, setSearch] = useState("");
-    const [level, setLevel] = useState("Todos");
-    const [status, setStatus] = useState("Todos");
+    const [search, setSearch] = useState('')
+    const [level, setLevel] = useState('Todos')
+    const [status, setStatus] = useState('Todos')
 
     const filteredParticipants = useMemo(() => {
-        const normalizedSearch = search.trim().toLowerCase();
+        const normalizedSearch = search.trim().toLowerCase()
 
-        return participants.filter((participant) => {
+        return demoParticipants.filter((participant) => {
             const matchesSearch =
                 !normalizedSearch ||
                 participant.name.toLowerCase().includes(normalizedSearch) ||
                 participant.email.toLowerCase().includes(normalizedSearch) ||
-                participant.id.toLowerCase().includes(normalizedSearch);
+                participant.id.toLowerCase().includes(normalizedSearch)
 
             const matchesLevel =
-                level === "Todos" || participant.level === level;
+                level === 'Todos' || participant.level === level
 
             const matchesStatus =
-                status === "Todos" || participant.status === status;
+                status === 'Todos' || participant.status === status
 
-            return matchesSearch && matchesLevel && matchesStatus;
-        });
-    }, [search, level, status]);
+            return matchesSearch && matchesLevel && matchesStatus
+        })
+    }, [search, level, status])
+
+    const activeCount = demoParticipants.filter(
+        (participant) => participant.status === 'Activo',
+    ).length
+
+    const participantsWithAdherence = demoParticipants.filter(
+        (participant) => participant.adherence !== null,
+    )
+
+    const averageAdherence = participantsWithAdherence.length
+        ? Math.round(
+            participantsWithAdherence.reduce(
+                (sum, participant) => sum + (participant.adherence ?? 0),
+                0,
+            ) / participantsWithAdherence.length,
+        )
+        : null
 
     return (
         <DashboardLayout>
@@ -62,9 +64,7 @@ export default function ParticipantsPage() {
                             <Users size={15} />
                             GESTIÓN DE USUARIOS
                         </div>
-
                         <h1>Participantes</h1>
-
                         <p>
                             Consulta los perfiles y el seguimiento de adherencia
                             de los participantes de FitSense.
@@ -76,21 +76,17 @@ export default function ParticipantsPage() {
                     </div>
                 </header>
 
-                <section
-                    className="participants-summary"
-                    aria-label="Resumen de participantes"
-                >
+                <section className="participants-summary" aria-label="Resumen de participantes">
                     <article className="participants-summary-card">
                         <div className="participants-summary-icon">
                             <Users size={20} />
                         </div>
-
                         <div>
                             <span className="participants-summary-label">
                                 Participantes registrados
                             </span>
-                            <strong>—</strong>
-                            <small>Pendiente de integración</small>
+                            <strong>{demoParticipants.length}</strong>
+                            <small>Perfiles disponibles</small>
                         </div>
                     </article>
 
@@ -98,13 +94,14 @@ export default function ParticipantsPage() {
                         <div className="participants-summary-icon">
                             <UserCheck size={20} />
                         </div>
-
                         <div>
                             <span className="participants-summary-label">
                                 Participantes activos
                             </span>
-                            <strong>—</strong>
-                            <small>Pendiente de integración</small>
+                            <strong>{activeCount}</strong>
+                            <small>
+                                {Math.round((activeCount / demoParticipants.length) * 100)}% del total
+                            </small>
                         </div>
                     </article>
 
@@ -112,13 +109,14 @@ export default function ParticipantsPage() {
                         <div className="participants-summary-icon">
                             <SlidersHorizontal size={20} />
                         </div>
-
                         <div>
                             <span className="participants-summary-label">
                                 Adherencia promedio
                             </span>
-                            <strong>—</strong>
-                            <small>Sin datos disponibles</small>
+                            <strong>
+                                {averageAdherence === null ? '—' : `${averageAdherence}%`}
+                            </strong>
+                            <small>Usuarios con registros de adherencia</small>
                         </div>
                     </article>
                 </section>
@@ -127,18 +125,17 @@ export default function ParticipantsPage() {
                     <div className="participants-content-heading">
                         <div>
                             <h2>Directorio de participantes</h2>
-                            <p>Busca y filtra los perfiles disponibles.</p>
+                            <p>Busca y filtra perfiles para consultar su seguimiento.</p>
                         </div>
-
                         <span className="participants-count">
-                            {filteredParticipants.length} participantes
+                            {filteredParticipants.length}{' '}
+                            {filteredParticipants.length === 1 ? 'participante' : 'participantes'}
                         </span>
                     </div>
 
                     <div className="participants-filters">
                         <label className="participants-search">
                             <Search size={18} aria-hidden="true" />
-
                             <input
                                 type="search"
                                 value={search}
@@ -186,9 +183,7 @@ export default function ParticipantsPage() {
                                     <th>Adherencia semanal</th>
                                     <th>Estado</th>
                                     <th>
-                                        <span className="visually-hidden">
-                                            Acciones
-                                        </span>
+                                        <span className="visually-hidden">Acciones</span>
                                     </th>
                                 </tr>
                             </thead>
@@ -202,7 +197,6 @@ export default function ParticipantsPage() {
                                                     <div className="participant-avatar">
                                                         {participant.name.charAt(0).toUpperCase()}
                                                     </div>
-
                                                     <div>
                                                         <strong>{participant.name}</strong>
                                                         <span>{participant.email}</span>
@@ -212,13 +206,11 @@ export default function ParticipantsPage() {
 
                                             <td>{participant.level}</td>
                                             <td>{participant.goal}</td>
-
                                             <td>
                                                 {participant.adherence === null
-                                                    ? "—"
+                                                    ? '—'
                                                     : `${participant.adherence}%`}
                                             </td>
-
                                             <td>
                                                 <span
                                                     className={`participant-status participant-status--${participant.status.toLowerCase()}`}
@@ -226,15 +218,14 @@ export default function ParticipantsPage() {
                                                     {participant.status}
                                                 </span>
                                             </td>
-
                                             <td>
-                                                <a
+                                                <Link
                                                     className="participant-view-link"
-                                                    href={`/dashboard/participants/${encodeURIComponent(participant.id)}`}
-                                                    aria-label={`Ver participante ${participant.name}`}
+                                                    to={`/dashboard/participants/${encodeURIComponent(participant.id)}`}
+                                                    aria-label={`Ver detalle de ${participant.name}`}
                                                 >
-                                                    Ver perfil <ChevronRight size={15} />
-                                                </a>
+                                                    Ver detalle<ChevronRight size={15} />
+                                                </Link>
                                             </td>
                                         </tr>
                                     ))
@@ -243,34 +234,13 @@ export default function ParticipantsPage() {
                                         <td colSpan={6}>
                                             <div className="participants-empty">
                                                 <div className="participants-empty-icon">
-                                                    {search || level !== "Todos" || status !== "Todos" ? (
-                                                        <Search size={24} />
-                                                    ) : (
-                                                        <Users size={25} />
-                                                    )}
+                                                    <Search size={24} />
                                                 </div>
-
-                                                <h3>
-                                                    {search || level !== "Todos" || status !== "Todos"
-                                                        ? "No se encontraron participantes"
-                                                        : "Aún no hay participantes para mostrar"}
-                                                </h3>
-
+                                                <h3>No se encontraron participantes</h3>
                                                 <p>
-                                                    {search || level !== "Todos" || status !== "Todos"
-                                                        ? "Prueba cambiando los términos de búsqueda o los filtros."
-                                                        : "El directorio se completará cuando se integre el servicio de consulta de participantes."}
+                                                    Prueba cambiando los términos de búsqueda
+                                                    o los filtros seleccionados.
                                                 </p>
-
-                                                {!search && level === "Todos" && status === "Todos" && (
-                                                    <div className="participants-pending-note">
-                                                        <Info size={15} />
-                                                        <span>
-                                                            La pantalla está preparada para la integración
-                                                            con el backend.
-                                                        </span>
-                                                    </div>
-                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -280,13 +250,11 @@ export default function ParticipantsPage() {
                     </div>
 
                     <footer className="participants-footer">
-                        <span>
-                            Los datos reales aparecerán cuando esté disponible el servicio
-                            administrativo.
-                        </span>
+                        Directorio de prueba para explorar los perfiles y las funciones
+                        de seguimiento del panel.
                     </footer>
                 </section>
             </main>
         </DashboardLayout>
-    );
+    )
 }

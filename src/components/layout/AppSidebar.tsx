@@ -3,9 +3,9 @@ import {
     Activity,
     BarChart3,
     ClipboardList,
-    CircleHelp,
     LayoutDashboard,
     Users,
+    ShieldCheck,
 } from 'lucide-react'
 import { NavLink } from 'react-router-dom'
 import './AppSidebar.css'
@@ -76,17 +76,23 @@ export default function AppSidebar() {
                 </nav>
             </div>
 
+
             <div className="sidebar-bottom">
                 <section className="sidebar-help-card">
                     <span className="sidebar-help-icon">
-                        <CircleHelp size={18} strokeWidth={1.9} />
+                        <Activity size={19} strokeWidth={1.9} />
                     </span>
 
                     <div className="sidebar-help-copy">
+                        <span className="sidebar-section-caption">
+                            FITSENSE
+                        </span>
+
                         <strong>Seguimiento de adherencia</strong>
+
                         <p>
-                            Consulta los indicadores y la evolución
-                            del cumplimiento de los planes de ejercicio.
+                            Supervisa el cumplimiento y la evolución
+                            de los planes de ejercicio.
                         </p>
                     </div>
                 </section>
@@ -101,10 +107,24 @@ export default function AppSidebar() {
 
                     <div className="sidebar-account-info">
                         <strong>Administrador</strong>
-                        <span>Panel administrativo</span>
+                        <span>Gestión de la plataforma</span>
                     </div>
+
+                    <span
+                        className="sidebar-account-badge"
+                        title="Perfil administrativo"
+                        aria-label="Perfil administrativo"
+                    >
+                        <ShieldCheck size={16} strokeWidth={1.9} />
+                    </span>
+                </div>
+
+                <div className="sidebar-footer">
+                    <span className="sidebar-footer-dot" />
+                    <span>Panel de gestión FitSense</span>
                 </div>
             </div>
+
         </aside>
     )
 }
