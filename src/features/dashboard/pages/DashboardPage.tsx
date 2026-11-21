@@ -140,7 +140,7 @@ export default function DashboardPage() {
                         <p>
                             <p>
                                 Consulta la adherencia, las sesiones registradas
-                                y la evolución de los participantes de FitSense.
+                                y la evolución de los participantes de Kora.
                             </p>
                         </p>
 
@@ -382,9 +382,9 @@ export default function DashboardPage() {
                 </section>
 
                 <footer className="dashboard-page-footer">
-                    <span>FitSense · Panel de seguimiento</span>
+                    <span>Kora · Panel de seguimiento</span>
                     <span>
-                        {loading ? 'Cargando información…' : 'Información obtenida de los servicios de FitSense.'}
+                        {loading ? 'Cargando información…' : 'Información obtenida de los servicios de Kora.'}
                     </span>
                 </footer>
             </div>

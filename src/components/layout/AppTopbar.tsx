@@ -63,7 +63,7 @@ export default function AppTopbar({
         <header className="app-topbar">
             <div className="topbar-heading">
                 <span className="topbar-eyebrow">
-                    FITSENSE / ADMINISTRACIÓN
+                    KORA / ADMINISTRACIÓN
                 </span>
 
                 <h1>Panel administrativo</h1>

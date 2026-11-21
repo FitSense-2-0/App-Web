@@ -536,7 +536,7 @@ export default function AnalyticsPage() {
                 </section>
 
                 <footer className="analytics-footer">
-                    <span>FitSense · Analíticas</span>
+                    <span>Kora · Analíticas</span>
 
                     <span>
                         Análisis basado en los registros semanales devueltos

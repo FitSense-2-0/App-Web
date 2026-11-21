@@ -12,8 +12,8 @@ export interface AuthenticatedUser {
     token: string
 }
 
-const TOKEN_KEY = 'fitsense_token'
-const USER_KEY = 'fitsense_user'
+const TOKEN_KEY = 'kora_token'
+const USER_KEY = 'kora_user'
 
 export const authService = {
     async login(
@@ -64,7 +64,7 @@ export const authService = {
 
 
     getToken(): string | null {
-        return localStorage.getItem('fitsense_token')
+        return localStorage.getItem('kora_token')
     },
 
     isAuthenticated(): boolean {
@@ -72,8 +72,8 @@ export const authService = {
     },
 
     logout(): void {
-        localStorage.removeItem('fitsense_token')
-        localStorage.removeItem('fitsense_user')
+        localStorage.removeItem('kora_token')
+        localStorage.removeItem('kora_user')
     },
 
     getCachedUser(): Omit<AuthenticatedUser, 'token'> | null {

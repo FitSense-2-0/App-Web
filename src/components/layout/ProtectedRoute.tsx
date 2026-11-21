@@ -5,7 +5,7 @@ export default function ProtectedRoute() {
     const location = useLocation()
 
     const hasLocalSession =
-        localStorage.getItem('fitsense_local_session') === 'true'
+        localStorage.getItem('kora_local_session') === 'true'
 
     if (!hasLocalSession) {
         return (

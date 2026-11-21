@@ -49,7 +49,7 @@ export default function DashboardLayout({
 
     const profile = {
         userName,
-        userRole: userEmail || 'Cuenta FitSense',
+        userRole: userEmail || 'Cuenta Kora',
     }
 
     return (
@@ -60,7 +60,7 @@ export default function DashboardLayout({
                 </span>
 
                 <div className="workspace-brand-copy">
-                    <strong>FitSense</strong>
+                    <strong>Kora</strong>
                     <span>Administrador de Analíticas</span>
                 </div>
             </header>

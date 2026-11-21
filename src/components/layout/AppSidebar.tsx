@@ -85,7 +85,7 @@ export default function AppSidebar() {
 
                     <div className="sidebar-help-copy">
                         <span className="sidebar-section-caption">
-                            FITSENSE
+                            KORA
                         </span>
 
                         <strong>Seguimiento de adherencia</strong>
@@ -121,7 +121,7 @@ export default function AppSidebar() {
 
                 <div className="sidebar-footer">
                     <span className="sidebar-footer-dot" />
-                    <span>Panel de gestión FitSense</span>
+                    <span>Panel de gestión Kora</span>
                 </div>
             </div>
 

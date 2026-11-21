@@ -509,7 +509,7 @@ export default function InterventionsPage() {
                 </section>
 
                 <footer className="interventions-footer">
-                    <span>FitSense · Intervenciones</span>
+                    <span>Kora · Intervenciones</span>
                     <span>
                         {loading
                             ? 'Cargando información…'
