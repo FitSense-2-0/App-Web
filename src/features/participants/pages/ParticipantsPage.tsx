@@ -67,7 +67,7 @@ export default function ParticipantsPage() {
                         <h1>Participantes</h1>
                         <p>
                             Consulta los perfiles y el seguimiento de adherencia
-                            de los participantes de FitSense.
+                            de los participantes de Kora.
                         </p>
                     </div>
 

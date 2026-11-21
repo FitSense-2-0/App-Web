@@ -765,7 +765,7 @@ export default function WeeklyMetricsPage() {
                 )}
 
                 <footer className="wm-footer">
-                    <span>FitSense · Métricas semanales</span>
+                    <span>Kora · Métricas semanales</span>
                     <span>
                         Los indicadores reflejan los registros recibidos desde la API.
                     </span>
